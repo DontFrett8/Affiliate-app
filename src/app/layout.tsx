@@ -10,6 +10,7 @@ export const metadata: Metadata = {
   description: "Amazon affiliate → Pinterest workflow",
   manifest: "/manifest.webmanifest",
   appleWebApp: { capable: true, title: "PinFlow", statusBarStyle: "default" },
+  icons: { icon: [{ url: "/icon.svg", type: "image/svg+xml" }, { url: "/icon-512.png", sizes: "512x512" }], apple: "/apple-icon.png" },
 };
 
 export const viewport: Viewport = {
