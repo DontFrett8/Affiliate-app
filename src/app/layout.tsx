@@ -19,12 +19,12 @@ export async function generateViewport(): Promise<Viewport> {
   const pref = await getThemePref();
   const base = { width: "device-width", initialScale: 1, viewportFit: "cover" as const };
   if (pref === "light") return { ...base, themeColor: "#fdf7f5" };
-  if (pref === "dark") return { ...base, themeColor: "#1b1016" };
+  if (pref === "dark") return { ...base, themeColor: "#33202c" };
   return {
     ...base,
     themeColor: [
       { media: "(prefers-color-scheme: light)", color: "#fdf7f5" },
-      { media: "(prefers-color-scheme: dark)", color: "#1b1016" },
+      { media: "(prefers-color-scheme: dark)", color: "#33202c" },
     ],
   };
 }

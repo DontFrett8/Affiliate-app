@@ -21,7 +21,7 @@ function apply(pref: ThemePref) {
   if (pref === "system") root.removeAttribute("data-theme");
   else root.setAttribute("data-theme", pref);
   const dark = pref === "dark" || (pref === "system" && window.matchMedia(query).matches);
-  document.querySelector('meta[name="theme-color"]:not([media])')?.setAttribute("content", dark ? "#1b1016" : "#fdf7f5");
+  document.querySelector('meta[name="theme-color"]:not([media])')?.setAttribute("content", dark ? "#33202c" : "#fdf7f5");
 }
 
 function useThemePref(initial: ThemePref) {

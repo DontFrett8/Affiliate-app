@@ -29,50 +29,50 @@
    or whenever the user picked Dark in PinFlow. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --background: #1b1016;    /* aubergine */
-    --background-2: #2a1520;
+    --background: #33202c;    /* plum */
+    --background-2: #3f2534;
     --foreground: #fbeef1;
-    --card: #261821;
-    --card-2: #2f1e29;
-    --muted: #c9a9b4;
-    --border: #3b2632;
+    --card: #402a38;
+    --card-2: #4a3141;
+    --muted: #d9bcc6;
+    --border: #5a3d4d;
     --accent: #ff2d55;
     --accent-2: #ff7aa2;
-    --accent-soft: #3d1a28;
+    --accent-soft: #5a2a3e;
     --accent-ink: #ff9db4;
-    --success-soft: #16301f;
+    --success-soft: #24402f;
     --success-ink: #7fd8a5;
-    --warn-soft: #33250f;
+    --warn-soft: #4a3820;
     --warn-ink: #f3c16b;
-    --danger-soft: #3a1717;
+    --danger-soft: #532628;
     --danger-ink: #ff9a8f;
-    --info-soft: #261f3d;
+    --info-soft: #3a3058;
     --info-ink: #b9a6ff;
-    --shadow-rose: 0 1px 2px rgb(0 0 0 / 0.3), 0 12px 30px -14px rgb(0 0 0 / 0.6);
+    --shadow-rose: 0 1px 2px rgb(20 6 14 / 0.25), 0 12px 30px -14px rgb(20 6 14 / 0.5);
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
-    --background: #1b1016;    /* aubergine */
-    --background-2: #2a1520;
+    --background: #33202c;    /* plum */
+    --background-2: #3f2534;
     --foreground: #fbeef1;
-    --card: #261821;
-    --card-2: #2f1e29;
-    --muted: #c9a9b4;
-    --border: #3b2632;
+    --card: #402a38;
+    --card-2: #4a3141;
+    --muted: #d9bcc6;
+    --border: #5a3d4d;
     --accent: #ff2d55;
     --accent-2: #ff7aa2;
-    --accent-soft: #3d1a28;
+    --accent-soft: #5a2a3e;
     --accent-ink: #ff9db4;
-    --success-soft: #16301f;
+    --success-soft: #24402f;
     --success-ink: #7fd8a5;
-    --warn-soft: #33250f;
+    --warn-soft: #4a3820;
     --warn-ink: #f3c16b;
-    --danger-soft: #3a1717;
+    --danger-soft: #532628;
     --danger-ink: #ff9a8f;
-    --info-soft: #261f3d;
+    --info-soft: #3a3058;
     --info-ink: #b9a6ff;
-    --shadow-rose: 0 1px 2px rgb(0 0 0 / 0.3), 0 12px 30px -14px rgb(0 0 0 / 0.6);
+    --shadow-rose: 0 1px 2px rgb(20 6 14 / 0.25), 0 12px 30px -14px rgb(20 6 14 / 0.5);
   color-scheme: dark;
 }
 :root[data-theme="light"] { color-scheme: light; }
