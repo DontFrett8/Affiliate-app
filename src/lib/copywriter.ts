@@ -124,7 +124,9 @@ Write the title (max 90 characters) and the body (max ${bodyMax} characters).`;
       usage: { input: res.usage.input_tokens, output: res.usage.output_tokens },
     };
   } catch (err) {
-    let msg = err instanceof Error ? err.message : String(err);
+    const raw = err instanceof Error ? err.message : String(err);
+    console.error("suggestPinCopy failed (raw):", raw.slice(0, 500));
+    let msg = raw;
     if (err instanceof Anthropic.AuthenticationError || err instanceof Anthropic.PermissionDeniedError) msg = `AI access denied (${err.status})`;
     else if (err instanceof Anthropic.RateLimitError) msg = "AI is rate limited right now";
     else if (err instanceof Anthropic.APIError) msg = `AI error ${err.status ?? ""}: ${err.message}`.trim();
