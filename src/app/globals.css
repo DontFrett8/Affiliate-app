@@ -25,8 +25,10 @@
   --shadow-rose: 0 1px 2px rgb(43 22 32 / 0.04), 0 10px 30px -14px rgb(214 0 54 / 0.22);
 }
 
+/* Dark palette: used when the phone is in dark mode (unless the user picked Light),
+   or whenever the user picked Dark in PinFlow. */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --background: #1b1016;    /* aubergine */
     --background-2: #2a1520;
     --foreground: #fbeef1;
@@ -47,8 +49,33 @@
     --info-soft: #261f3d;
     --info-ink: #b9a6ff;
     --shadow-rose: 0 1px 2px rgb(0 0 0 / 0.3), 0 12px 30px -14px rgb(0 0 0 / 0.6);
+    color-scheme: dark;
   }
 }
+:root[data-theme="dark"] {
+    --background: #1b1016;    /* aubergine */
+    --background-2: #2a1520;
+    --foreground: #fbeef1;
+    --card: #261821;
+    --card-2: #2f1e29;
+    --muted: #c9a9b4;
+    --border: #3b2632;
+    --accent: #ff2d55;
+    --accent-2: #ff7aa2;
+    --accent-soft: #3d1a28;
+    --accent-ink: #ff9db4;
+    --success-soft: #16301f;
+    --success-ink: #7fd8a5;
+    --warn-soft: #33250f;
+    --warn-ink: #f3c16b;
+    --danger-soft: #3a1717;
+    --danger-ink: #ff9a8f;
+    --info-soft: #261f3d;
+    --info-ink: #b9a6ff;
+    --shadow-rose: 0 1px 2px rgb(0 0 0 / 0.3), 0 12px 30px -14px rgb(0 0 0 / 0.6);
+  color-scheme: dark;
+}
+:root[data-theme="light"] { color-scheme: light; }
 
 @theme inline {
   --color-background: var(--background);

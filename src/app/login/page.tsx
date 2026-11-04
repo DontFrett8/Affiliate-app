@@ -1,5 +1,7 @@
 import { redirect } from "next/navigation";
 import { Logo } from "@/components/Logo";
+import { ThemeToggle } from "@/components/ThemeControls";
+import { getThemePref } from "@/lib/theme";
 import { cookies } from "next/headers";
 import { createSessionToken, isAuthenticated, passwordMatches, sessionCookieOptions, SESSION_COOKIE } from "@/lib/auth";
 
@@ -23,6 +25,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
 
   return (
     <main className="relative mx-auto flex w-full max-w-sm flex-1 flex-col justify-center overflow-hidden px-6 py-12">
+      <div className="absolute right-4 top-[max(env(safe-area-inset-top),0.75rem)] z-10"><ThemeToggle initial={await getThemePref()} /></div>
       <div aria-hidden className="pointer-events-none absolute -right-24 -top-20 h-72 w-72 rounded-full bg-accent-2/25 blur-3xl" />
       <div aria-hidden className="pointer-events-none absolute -bottom-24 -left-20 h-72 w-72 rounded-full bg-accent/15 blur-3xl" />
       <div className="animate-rise relative mb-8 text-center">

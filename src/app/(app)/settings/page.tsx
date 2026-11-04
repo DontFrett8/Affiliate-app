@@ -11,6 +11,8 @@ import { getPublisher } from "@/lib/platforms";
 import { CategoryBrowser } from "@/components/CategoryBrowser";
 import { PageHeader } from "@/components/PageHeader";
 import { LogOut } from "lucide-react";
+import { AppearancePicker } from "@/components/ThemeControls";
+import { getThemePref } from "@/lib/theme";
 import { formatLocal, nowMs } from "@/lib/schedule";
 
 export const dynamic = "force-dynamic";
@@ -19,6 +21,7 @@ export const metadata = { title: "Settings" };
 export default async function SettingsPage({ searchParams }: PageProps<"/settings">) {
   const sp = await searchParams;
   const s = await getSettings();
+  const themePref = await getThemePref();
   const cats = await db.select().from(categories).orderBy(asc(categories.sortOrder), asc(categories.id));
   const conn = await getConnection();
   const boards = conn ? await getPublisher("pinterest").listBoards().catch(() => conn.boards ?? []) : [];
@@ -44,6 +47,13 @@ export default async function SettingsPage({ searchParams }: PageProps<"/setting
         title={<>Settings &amp; <span className="italic text-accent">style</span></>}
         action={<form action="/api/auth/logout" method="post"><button className="btn-secondary !px-3.5 !py-2 !text-xs"><LogOut size={13} /> Sign out</button></form>}
       />
+
+      {/* Appearance */}
+      <section className="card space-y-3">
+        <h2 className="section-title">Appearance</h2>
+        <AppearancePicker initial={themePref} />
+        <p className="text-xs text-muted">The sun/moon button at the top of every screen switches quickly too.</p>
+      </section>
 
       {/* Pinterest */}
       <section className="card space-y-3">
