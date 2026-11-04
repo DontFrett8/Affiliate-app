@@ -1,9 +1,14 @@
 "use client";
 
-import { useActionState, useState, useTransition } from "react";
+import { useActionState, useCallback, useEffect, useRef, useState, useTransition } from "react";
 import Image from "next/image";
 import { upload } from "@vercel/blob/client";
 import { createPin, refreshBoards, updatePin, type PinFormState } from "@/actions/pins";
+import { suggestCopy } from "@/actions/copy";
+
+type Picked = { asin: string; title: string; categoryId: number; imageUrl: string | null };
+const SELECTION_KEY = "pinflow:selected";
+const SUGGESTED_KEY = "pinflow:suggestedFor";
 
 export type PinFormInitial = {
   id?: number;
@@ -39,7 +44,59 @@ export function PinForm(props: {
   const [boardId, setBoardId] = useState(props.initial.boardId);
   const [boardsBusy, startBoards] = useTransition();
   const [boardsMsg, setBoardsMsg] = useState<string | null>(null);
+  const [categoryId, setCategoryId] = useState<string>(props.initial.categoryId ? String(props.initial.categoryId) : "");
+  const [picked, setPicked] = useState<Picked[]>([]);
+  const [suggesting, setSuggesting] = useState(false);
+  const [suggestNote, setSuggestNote] = useState<string | null>(null);
+  const touched = useRef(false);
   const fe = state?.fieldErrors ?? {};
+
+  const runSuggest = useCallback(
+    async (items: Picked[], auto: boolean) => {
+      if (!items.length) return;
+      setSuggesting(true);
+      setSuggestNote(null);
+      try {
+        const r = await suggestCopy({ titles: items.map((p) => p.title), categoryIds: items.map((p) => p.categoryId) });
+        // Don't overwrite anything typed while the request was running.
+        if (auto && touched.current) return;
+        setTitle(r.title);
+        setDescription(r.description);
+        setSuggestNote(r.source === "ai" ? "Suggested by AI from your picks. Edit anything you like." : r.note ?? "Template suggestion.");
+        try { localStorage.setItem(SUGGESTED_KEY, items.map((p) => p.asin).sort().join(",")); } catch {}
+      } catch (err) {
+        setSuggestNote(err instanceof Error ? err.message : "Couldn't get a suggestion.");
+      } finally {
+        setSuggesting(false);
+      }
+    },
+    [],
+  );
+
+  // Load the products ticked on the Find tab; auto-suggest once per new selection when creating.
+  useEffect(() => {
+    let items: Picked[] = [];
+    try {
+      const raw = localStorage.getItem(SELECTION_KEY);
+      if (raw) items = Object.values(JSON.parse(raw) as Record<string, Picked>).filter((p) => p && p.title);
+    } catch {}
+    if (!items.length) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- hydrating client-only state from localStorage
+    setPicked(items);
+    if (!categoryId) {
+      const counts = new Map<number, number>();
+      for (const p of items) counts.set(p.categoryId, (counts.get(p.categoryId) ?? 0) + 1);
+      const top = [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
+      if (top && props.categories.some((c) => c.id === top)) setCategoryId(String(top));
+    }
+    if (props.mode !== "create") return;
+    let last = "";
+    try { last = localStorage.getItem(SUGGESTED_KEY) ?? ""; } catch {}
+    const key = items.map((p) => p.asin).sort().join(",");
+    if (key !== last) void runSuggest(items, true);
+    // Run once on mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const hasDisclosure = !props.disclosure || description.toLowerCase().includes(props.disclosure.toLowerCase());
 
   async function onFile(file: File | undefined) {
@@ -146,7 +203,7 @@ export function PinForm(props: {
         </div>
         <div>
           <label className="label" htmlFor="categoryId">Category (for your records)</label>
-          <select id="categoryId" name="categoryId" className="input" defaultValue={props.initial.categoryId ?? ""}>
+          <select id="categoryId" name="categoryId" className="input" value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
             <option value="">—</option>
             {props.categories.map((c) => (
               <option key={c.id} value={c.id}>{c.name}</option>
@@ -157,12 +214,40 @@ export function PinForm(props: {
 
       {/* Copy */}
       <section className="card space-y-3">
+        {picked.length > 0 ? (
+          <div className="space-y-2 rounded-xl bg-background p-3">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-sm font-semibold">✨ From your {picked.length} pick{picked.length === 1 ? "" : "s"}</p>
+              <button
+                type="button"
+                className="btn-secondary !py-1 !text-xs"
+                disabled={suggesting}
+                onClick={() => { touched.current = false; void runSuggest(picked, false); }}
+              >
+                {suggesting ? "Writing…" : title || description ? "Suggest again" : "Suggest"}
+              </button>
+            </div>
+            <div className="flex gap-1.5 overflow-x-auto [scrollbar-width:none]">
+              {picked.map((p) => (
+                <div key={p.asin} className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-white ring-1 ring-border" title={p.title}>
+                  {p.imageUrl && <Image src={p.imageUrl} alt="" fill sizes="40px" className="object-contain p-0.5" unoptimized />}
+                </div>
+              ))}
+            </div>
+            {suggesting && <p className="text-xs text-muted">Writing a title and description for these products…</p>}
+            {suggestNote && !suggesting && <p className="text-xs text-muted">{suggestNote}</p>}
+          </div>
+        ) : (
+          props.mode === "create" && (
+            <p className="text-xs text-muted">Tip: tick products on the Find tab first and PinFlow will write a title and description for them.</p>
+          )
+        )}
         <div>
           <div className="flex items-center justify-between">
             <label className="label" htmlFor="title">Title</label>
             <span className={`text-xs ${title.length > 100 ? "text-red-600" : "text-muted"}`}>{title.length}/100</span>
           </div>
-          <input id="title" name="title" className="input" maxLength={100} value={title} onChange={(e) => setTitle(e.target.value)} />
+          <input id="title" name="title" className="input" maxLength={100} value={title} onChange={(e) => { touched.current = true; setTitle(e.target.value); }} />
           {fe.title && <p className="mt-1 text-xs text-red-600">{fe.title}</p>}
         </div>
         <div>
@@ -170,7 +255,7 @@ export function PinForm(props: {
             <label className="label" htmlFor="description">Description</label>
             <span className={`text-xs ${description.length > 500 ? "text-red-600" : "text-muted"}`}>{description.length}/500</span>
           </div>
-          <textarea id="description" name="description" className="input min-h-40" maxLength={500} value={description} onChange={(e) => setDescription(e.target.value)} />
+          <textarea id="description" name="description" className="input min-h-40" maxLength={500} value={description} onChange={(e) => { touched.current = true; setDescription(e.target.value); }} />
           <div className="mt-2 flex flex-wrap gap-2">
             {!hasDisclosure && (
               <button type="button" className="btn-secondary !py-1 !text-xs" onClick={appendDisclosure}>+ Add disclosure</button>
