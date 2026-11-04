@@ -18,7 +18,7 @@ async function takenSlots() {
   const rows = await db
     .select({ scheduledAt: pins.scheduledAt })
     .from(pins)
-    .where(inArray(pins.status, ["scheduled", "posting", "posted"]));
+    .where(inArray(pins.status, ["draft", "scheduled", "posting", "posted"]));
   return rows.map((r) => r.scheduledAt);
 }
 
@@ -41,7 +41,6 @@ function validate(data: FormData, disclosure: string) {
 
   if (!imageUrl) fieldErrors.imageUrl = "Upload an image first.";
   if (!/^https?:\/\//i.test(destinationLink)) fieldErrors.destinationLink = "Enter a full link starting with https://";
-  if (!boardId) fieldErrors.boardId = "Pick a board.";
   if (!title) fieldErrors.title = "Title is required.";
   if (title.length > TITLE_MAX) fieldErrors.title = `Title must be ≤ ${TITLE_MAX} characters.`;
   if (!description) fieldErrors.description = "Description is required.";
@@ -60,6 +59,7 @@ export async function createPin(_prev: PinFormState, data: FormData): Promise<Pi
   if (Object.keys(fieldErrors).length) return { fieldErrors };
   const scheduledAt = fromLocalInputValue(values.scheduledLocal, s.timezone);
   const postNow = data.get("intent") === "now";
+  if (postNow && !values.boardId) return { fieldErrors: { boardId: "Pick a board to post now." } };
   const [row] = await db
     .insert(pins)
     .values({
@@ -72,7 +72,8 @@ export async function createPin(_prev: PinFormState, data: FormData): Promise<Pi
       altText: values.altText,
       categoryId: values.categoryId,
       scheduledAt: postNow ? new Date() : scheduledAt,
-      status: "scheduled",
+      // No board yet (Pinterest not connected) → keep it as a draft that still holds its slot.
+      status: values.boardId ? "scheduled" : "draft",
     })
     .returning({ id: pins.id });
   if (postNow) await publishPin(row.id);
@@ -101,7 +102,7 @@ export async function updatePin(_prev: PinFormState, data: FormData): Promise<Pi
       altText: values.altText,
       categoryId: values.categoryId,
       scheduledAt: fromLocalInputValue(values.scheduledLocal, s.timezone),
-      status: "scheduled",
+      status: values.boardId ? "scheduled" : "draft",
       error: null,
       attempts: 0,
       updatedAt: new Date(),

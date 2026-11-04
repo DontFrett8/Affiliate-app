@@ -16,7 +16,7 @@ const statusStyle: Record<string, string> = {
   posting: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200",
   posted: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200",
   failed: "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-200",
-  draft: "bg-stone-100 text-stone-700",
+  draft: "bg-stone-200 text-stone-800 dark:bg-stone-800 dark:text-stone-200",
 };
 
 export default async function QueuePage() {
@@ -28,6 +28,7 @@ export default async function QueuePage() {
     .from(pins)
     .orderBy(sql`case when ${pins.status} in ('scheduled','posting','failed') then 0 else 1 end`, asc(pins.scheduledAt), desc(pins.id));
   const upcoming = rows.filter((p) => p.status !== "posted");
+  const drafts = upcoming.filter((p) => p.status === "draft").length;
   const history = rows.filter((p) => p.status === "posted").reverse();
   const now = nowMs();
 
@@ -45,7 +46,7 @@ export default async function QueuePage() {
 
       {!conn && (
         <p className="card border-amber-300 bg-amber-50 text-sm text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
-          Pins will fail to post until you <Link className="underline" href="/settings">connect Pinterest</Link>.
+          Pinterest isn&apos;t connected yet. Keep building drafts{drafts ? ` (${drafts} so far)` : ""}; once you <Link className="underline" href="/settings">connect</Link>, open each draft and pick a board.
         </p>
       )}
 
@@ -71,6 +72,7 @@ export default async function QueuePage() {
 
 function Row({ p, tz, now }: { p: typeof pins.$inferSelect; tz: string; now: number }) {
   const overdue = p.status === "scheduled" && p.scheduledAt.getTime() < now - 20 * 60 * 1000;
+  const draftLate = p.status === "draft" && p.scheduledAt.getTime() < now;
   return (
     <li className="card flex gap-3 !p-3">
       <div className="relative h-24 w-16 shrink-0 overflow-hidden rounded-lg bg-background ring-1 ring-border">
@@ -82,8 +84,12 @@ function Row({ p, tz, now }: { p: typeof pins.$inferSelect; tz: string; now: num
           <span className="text-xs text-muted">{formatLocal(p.status === "posted" && p.postedAt ? p.postedAt : p.scheduledAt, tz)}</span>
         </div>
         <p className="mt-1 truncate text-sm font-medium">{p.title}</p>
-        <p className="truncate text-xs text-muted">{p.boardName ?? p.boardId}</p>
+        <p className="truncate text-xs text-muted">{p.boardName || p.boardId || "no board yet"}</p>
         {p.error && <p className="mt-1 line-clamp-3 text-xs text-red-600">{p.error}</p>}
+        {p.status === "draft" && (
+          <p className="mt-1 text-xs text-amber-700">Draft: holds this slot but won&apos;t post until you <Link href={`/pins/${p.id}/edit`} className="underline">pick a board</Link>.</p>
+        )}
+        {draftLate && <p className="mt-1 text-xs text-muted">This slot has passed; when you pick a board, also move the time.</p>}
         {overdue && !p.error && (
           <p className="mt-1 text-xs text-amber-700">Past due — is the cron job calling /api/cron/publish? See Settings.</p>
         )}

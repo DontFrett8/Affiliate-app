@@ -133,8 +133,12 @@ export function PinForm(props: {
             </select>
           ) : (
             <div className="space-y-1">
-              <input id="boardId" name="boardId" className="input" value={boardId} onChange={(e) => setBoardId(e.target.value)} placeholder="Board ID (connect Pinterest to pick from a list)" />
-              <p className="text-xs text-muted">{props.pinterestConnected ? "Tap “Reload boards” to fetch your boards." : "Pinterest isn’t connected yet — do that in Settings."}</p>
+              <input id="boardId" name="boardId" className="input" value={boardId} onChange={(e) => setBoardId(e.target.value)} placeholder="Leave empty to save as a draft" />
+              <p className="text-xs text-muted">
+                {props.pinterestConnected
+                  ? "Tap “Reload boards” to fetch your boards."
+                  : "Pinterest isn’t connected yet. Save without a board and it’s kept as a draft in your queue; pick the board once you connect."}
+              </p>
             </div>
           )}
           {boardsMsg && <p className="mt-1 text-xs text-muted">{boardsMsg}</p>}
@@ -196,7 +200,7 @@ export function PinForm(props: {
 
       <div className="flex gap-2">
         <button type="submit" name="intent" value="schedule" className="btn-primary flex-1" disabled={submitting || uploading != null || !hasDisclosure}>
-          {submitting ? "Saving…" : props.mode === "create" ? "Schedule pin" : "Save changes"}
+          {submitting ? "Saving…" : !boardId ? "Save as draft" : props.mode === "create" ? "Schedule pin" : "Save changes"}
         </button>
         {props.mode === "create" && (
           <button type="submit" name="intent" value="now" className="btn-secondary" disabled={submitting || uploading != null || !hasDisclosure || !props.pinterestConnected} title="Publish immediately">
