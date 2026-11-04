@@ -40,7 +40,7 @@ Set these in **Vercel → Project → Settings → Environment Variables** (Prod
 | `CRON_SECRET` | Any long random string. The cron caller sends it as `?key=` or `Authorization: Bearer`. (A random one was set for you.) |
 | `PINTEREST_APP_ID` / `PINTEREST_APP_SECRET` | developers.pinterest.com → My apps → your app → App ID / App secret. |
 | `PINTEREST_ENV` | `sandbox` (default) until Standard access is approved, then `production`. |
-| `APP_URL` | Your production URL, e.g. `https://pinflow.vercel.app`. Used to build the OAuth redirect URI so previews don't mismatch. |
+| `APP_URL` | Your production URL, e.g. `https://pinflow-iota.vercel.app`. Used to build the OAuth redirect URI so previews don't mismatch. |
 
 After changing env vars, **redeploy** (Vercel → Deployments → ⋯ → Redeploy).
 
@@ -52,8 +52,8 @@ Local dev: copy `.env.example` → `.env.local`, then `pnpm install && pnpm db:p
 
 1. Go to <https://developers.pinterest.com/apps/> and **Connect app**. Fill in:
    - App name: *PinFlow*, description: *Personal tool that schedules my own organic Pins.*
-   - **Redirect URI**: `https://<your-app>.vercel.app/api/pinterest/callback` (also shown on the app's Settings page).
-   - **Privacy policy URL**: `https://<your-app>.vercel.app/privacy`.
+   - **Redirect URI**: `https://pinflow-iota.vercel.app/api/pinterest/callback` (also shown on the app's Settings page).
+   - **Privacy policy URL**: `https://pinflow-iota.vercel.app/privacy`.
    - Scopes: `boards:read`, `pins:read`, `pins:write`, `user_accounts:read`.
 2. Copy **App ID** and **App secret** into Vercel env vars `PINTEREST_APP_ID` / `PINTEREST_APP_SECRET`, keep `PINTEREST_ENV=sandbox`, redeploy.
 3. In PinFlow → **Settings → Connect Pinterest**. Approve the consent screen. You'll land back on Settings showing *Connected as @you*.
@@ -125,7 +125,7 @@ Request budget: **Get top sellers** = 1 request per category; **Refresh this** =
 
 ## 6. The posting job (Hobby vs Pro)
 
-Pinterest has no scheduler, so something must call `GET https://<your-app>.vercel.app/api/cron/publish?key=<CRON_SECRET>` every 5–15 minutes.
+Pinterest has no scheduler, so something must call `GET https://pinflow-iota.vercel.app/api/cron/publish?key=<CRON_SECRET>` every 5–15 minutes.
 
 | Option | Cost | Setup |
 |---|---|---|
