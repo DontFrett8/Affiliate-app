@@ -1,4 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { eq } from "drizzle-orm";
+import { db } from "@/db";
+import { settings } from "@/db/schema";
 import { publishDuePins } from "@/lib/publish";
 
 export const dynamic = "force-dynamic";
@@ -16,6 +19,7 @@ async function handle(req: NextRequest) {
   if (header !== `Bearer ${secret}` && key !== secret) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  await db.update(settings).set({ lastCronAt: new Date() }).where(eq(settings.id, 1)).catch(() => {});
   const results = await publishDuePins();
   return NextResponse.json({ ran_at: new Date().toISOString(), processed: results.length, results });
 }

@@ -9,7 +9,7 @@ import { addCategory, deleteCategory, moveCategory, restoreDefaultCategories, sa
 import { callbackUrl, getConnection, pinterestEnv } from "@/lib/platforms/pinterest";
 import { getPublisher } from "@/lib/platforms";
 import { CategoryBrowser } from "@/components/CategoryBrowser";
-import { formatLocal } from "@/lib/schedule";
+import { formatLocal, nowMs } from "@/lib/schedule";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Settings" };
@@ -30,6 +30,8 @@ export default async function SettingsPage({ searchParams }: PageProps<"/setting
     cron: !!process.env.CRON_SECRET,
     pinterest: !!process.env.PINTEREST_APP_ID && !!process.env.PINTEREST_APP_SECRET,
   };
+  const cronAgeMin = s.lastCronAt ? Math.round((nowMs() - s.lastCronAt.getTime()) / 60000) : null;
+  const cronHealthy = cronAgeMin !== null && cronAgeMin <= 20;
   const flash = typeof sp.pinterest === "string" ? sp.pinterest : null;
   const flashMsg = typeof sp.msg === "string" ? sp.msg : null;
 
@@ -182,6 +184,12 @@ export default async function SettingsPage({ searchParams }: PageProps<"/setting
       {/* Automation */}
       <section className="card space-y-2 text-sm">
         <h2 className="font-semibold">Posting job</h2>
+        <p className={`flex items-center gap-2 rounded-xl p-2 text-sm ${cronHealthy ? "bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200" : "bg-amber-50 text-amber-900 dark:bg-amber-950/40 dark:text-amber-200"}`}>
+          <span className={`inline-block h-2 w-2 rounded-full ${cronHealthy ? "bg-emerald-500" : "bg-amber-500"}`} />
+          {s.lastCronAt
+            ? <>Last check-in: <strong>{formatLocal(s.lastCronAt, s.timezone, "MMM d, h:mm a")}</strong> ({cronAgeMin} min ago){cronHealthy ? " · working" : " · no recent check-ins"}</>
+            : <>No check-ins yet. The cron job hasn&apos;t reached PinFlow.</>}
+        </p>
         <p className="text-muted">Pinterest has no scheduler, so something must call this URL every 5–15 minutes. On Vercel Hobby, a free cron-job.org job does it; on Vercel Pro the included <code>vercel.json</code> cron runs every 10 min automatically.</p>
         <p className="break-all rounded-xl bg-background p-2 font-mono text-xs">{cronUrl}?key=YOUR_CRON_SECRET</p>
         <p className="text-xs text-muted">Retries: failed pins are retried automatically on the next runs (up to 3 attempts); “Retry now” in the queue always works.</p>

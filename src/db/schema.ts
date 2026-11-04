@@ -23,6 +23,8 @@ export const settings = pgTable("settings", {
     .notNull()
     .default("#ad As an Amazon Associate I earn from qualifying purchases."),
   defaultBoardId: text("default_board_id"),
+  /** Last time the external cron called /api/cron/publish (for the Settings health check). */
+  lastCronAt: timestamp("last_cron_at", { withTimezone: true }),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
