@@ -1,4 +1,4 @@
-import { fromZonedTime, toZonedTime, formatInTimeZone } from "date-fns-tz";
+import { fromZonedTime, formatInTimeZone } from "date-fns-tz";
 import { addDays } from "date-fns";
 
 export const DEFAULT_TIMES = ["09:00", "12:30", "17:00", "20:30"];
@@ -21,17 +21,17 @@ export function normalizeTimes(times: string[]) {
 
 /** All slot instants (UTC Dates) for `days` days starting today in the given zone. */
 export function slotsFrom(now: Date, times: string[], tz: string, days = 60): Date[] {
-  const localNow = toZonedTime(now, tz);
-  const out: Date[] = [];
+  const out = new Map<number, Date>();
   for (let d = 0; d < days; d++) {
-    const day = addDays(localNow, d);
-    const ymd = formatInTimeZone(day, tz, "yyyy-MM-dd");
+    // Calendar date in the target zone, d days from now.
+    const ymd = formatInTimeZone(addDays(now, d), tz, "yyyy-MM-dd");
     for (const t of times) {
       // Interpret "yyyy-MM-dd HH:mm" as wall-clock time in tz → UTC instant.
-      out.push(fromZonedTime(`${ymd}T${t}:00`, tz));
+      const slot = fromZonedTime(`${ymd}T${t}:00`, tz);
+      out.set(slot.getTime(), slot);
     }
   }
-  return out.sort((a, b) => a.getTime() - b.getTime());
+  return Array.from(out.values()).sort((a, b) => a.getTime() - b.getTime());
 }
 
 /**

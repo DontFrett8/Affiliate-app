@@ -144,3 +144,19 @@ export async function refreshBoards() {
     return { ok: false as const, error: err instanceof Error ? err.message : String(err) };
   }
 }
+
+export async function createPinterestBoard(formData: FormData) {
+  const name = String(formData.get("name") ?? "").trim();
+  const privacy = formData.get("privacy") === "SECRET" ? "SECRET" : "PUBLIC";
+  if (!name) return;
+  try {
+    const { createBoard } = await import("@/lib/platforms/pinterest");
+    await createBoard(name, privacy);
+    revalidatePath("/settings");
+    revalidatePath("/pins/new");
+    redirect("/settings?board=created");
+  } catch (err) {
+    if (err && typeof err === "object" && "digest" in err) throw err; // let redirect() through
+    redirect(`/settings?board=error&msg=${encodeURIComponent(err instanceof Error ? err.message : String(err))}`);
+  }
+}

@@ -143,6 +143,15 @@ async function apiFetch(path: string, init?: RequestInit & { json?: unknown }): 
   return json;
 }
 
+/** Pinterest-specific helper (not part of the generic Publisher interface): create a board. Handy in the sandbox, which starts empty. */
+export async function createBoard(name: string, privacy: "PUBLIC" | "SECRET" = "PUBLIC"): Promise<Board> {
+  const b = await apiFetch("/boards", { method: "POST", json: { name, privacy } });
+  const board = { id: String(b.id), name: String(b.name), privacy: b.privacy };
+  const row = await getConnection();
+  await db.update(connections).set({ boards: [...(row?.boards ?? []), board], boardsFetchedAt: new Date() }).where(eq(connections.platform, "pinterest"));
+  return board;
+}
+
 export const pinterestPublisher: Publisher = {
   platform: "pinterest",
 

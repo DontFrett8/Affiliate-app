@@ -216,7 +216,7 @@ export function FindView(props: {
       />
 
       {toast && (
-        <div className="fixed inset-x-4 bottom-36 z-50 mx-auto max-w-md rounded-xl bg-foreground px-4 py-3 text-center text-sm text-background shadow-lg">{toast}</div>
+        <div className="fixed inset-x-4 bottom-44 z-50 mx-auto max-w-md rounded-xl bg-foreground px-4 py-3 text-center text-sm text-background shadow-lg">{toast}</div>
       )}
     </div>
   );

@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { db } from "@/db";
 import { categories } from "@/db/schema";
 import { getSettings } from "@/lib/settings";
+import { createPinterestBoard } from "@/actions/pins";
 import { addCategory, deleteCategory, moveCategory, restoreDefaultCategories, saveSettings, updateCategory } from "@/actions/settings";
 import { callbackUrl, getConnection, pinterestEnv } from "@/lib/platforms/pinterest";
 import { getPublisher } from "@/lib/platforms";
@@ -51,6 +52,13 @@ export default async function SettingsPage({ searchParams }: PageProps<"/setting
               Connected as <strong>@{conn.accountName ?? "unknown"}</strong> · {conn.environment} API · {boards.length} boards
               {conn.accessExpiresAt && <> · token renews {formatLocal(conn.accessExpiresAt, s.timezone, "MMM d")}</>}
             </p>
+            {sp.board === "created" && <p className="rounded-xl bg-emerald-50 p-2 text-sm text-emerald-800">Board created.</p>}
+            {sp.board === "error" && <p className="rounded-xl bg-red-50 p-2 text-sm text-red-700">Couldn&apos;t create board: {flashMsg}</p>}
+            <form action={createPinterestBoard} className="flex gap-2">
+              <input name="name" className="input" placeholder="New board name (sandbox starts empty)" required />
+              <select name="privacy" className="input !w-auto" defaultValue="PUBLIC"><option value="PUBLIC">Public</option><option value="SECRET">Secret</option></select>
+              <button className="btn-secondary shrink-0">Create</button>
+            </form>
             <div className="flex gap-2">
               <a href="/api/pinterest/auth" className="btn-secondary">Reconnect</a>
               <form action="/api/pinterest/disconnect" method="post"><button className="btn-ghost text-red-600">Disconnect</button></form>
