@@ -123,6 +123,10 @@ Request budget: **Get top sellers** = 1 request per category; **Refresh this** =
 
 ---
 
+## 5b. Make.com bridge (until Pinterest approves the app)
+
+PinFlow can post through Make.com's Pinterest connection while the Pinterest app is in review. Set `MAKE_POST_WEBHOOK_URL`, `MAKE_BOARDS_WEBHOOK_URL` and `MAKE_WEBHOOK_KEY`, then build the two scenarios in [docs/MAKE_SETUP.md](docs/MAKE_SETUP.md). Routing is automatic: a direct Pinterest connection always wins, and Make is used only when there isn't one.
+
 ## 6. The posting job (Hobby vs Pro)
 
 Pinterest has no scheduler, so something must call `GET https://pinflow-iota.vercel.app/api/cron/publish?key=<CRON_SECRET>` every 5–15 minutes.

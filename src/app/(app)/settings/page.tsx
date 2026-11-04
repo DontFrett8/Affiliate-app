@@ -7,7 +7,9 @@ import { getSettings } from "@/lib/settings";
 import { createPinterestBoard } from "@/actions/pins";
 import { addCategory, deleteCategory, moveCategory, restoreDefaultCategories, saveSettings, updateCategory } from "@/actions/settings";
 import { callbackUrl, getConnection, pinterestEnv } from "@/lib/platforms/pinterest";
-import { getPublisher } from "@/lib/platforms";
+import { getPublisher, pinterestRoute } from "@/lib/platforms";
+import { makeConfig } from "@/lib/platforms/make";
+import { MakeSetup } from "@/components/MakeSetup";
 import { CategoryBrowser } from "@/components/CategoryBrowser";
 import { PageHeader } from "@/components/PageHeader";
 import { LogOut } from "lucide-react";
@@ -24,7 +26,9 @@ export default async function SettingsPage({ searchParams }: PageProps<"/setting
   const themePref = await getThemePref();
   const cats = await db.select().from(categories).orderBy(asc(categories.sortOrder), asc(categories.id));
   const conn = await getConnection();
-  const boards = conn ? await getPublisher("pinterest").listBoards().catch(() => conn.boards ?? []) : [];
+  const route = await pinterestRoute();
+  const boards = route !== "none" ? await getPublisher("pinterest").listBoards().catch(() => conn?.boards ?? s.makeBoards ?? []) : [];
+  const mk = makeConfig();
   const h = await headers();
   const origin = `${h.get("x-forwarded-proto") ?? "https"}://${h.get("x-forwarded-host") ?? h.get("host")}`;
   const redirect = callbackUrl(origin);
@@ -95,6 +99,20 @@ export default async function SettingsPage({ searchParams }: PageProps<"/setting
             <li>Privacy policy URL for the app listing: <code className="select-all break-all">{origin}/privacy</code></li>
           </ul>
         </details>
+      </section>
+
+      {/* Make.com bridge */}
+      <section className="card space-y-3">
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="section-title">Make.com bridge</h2>
+          <span className={`badge ${route === "make" ? "bg-success-soft text-success-ink" : route === "direct" ? "bg-card-2 text-muted ring-1 ring-border" : "bg-warn-soft text-warn-ink"}`}>
+            {route === "make" ? "Posting through Make" : route === "direct" ? "Standby (Pinterest connected)" : "Not set up"}
+          </span>
+        </div>
+        <p className="text-sm text-muted">
+          Until Pinterest approves your app, PinFlow can post through Make.com&apos;s Pinterest connection. When you connect Pinterest above, PinFlow switches to direct posting automatically and Make stops being used.
+        </p>
+        <MakeSetup postUrl={!!mk.postUrl} boardsUrl={!!mk.boardsUrl} keyValue={mk.key ?? null} boardCount={s.makeBoards?.length ?? 0} active={route === "make"} />
       </section>
 
       {/* General settings */}

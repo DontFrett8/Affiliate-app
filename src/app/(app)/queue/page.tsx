@@ -7,7 +7,8 @@ import { pins } from "@/db/schema";
 import { getSettings } from "@/lib/settings";
 import { formatLocal, nowMs } from "@/lib/schedule";
 import { deletePin, postPinNow, retryPin } from "@/actions/pins";
-import { getConnection, pinterestEnv } from "@/lib/platforms/pinterest";
+import { pinterestEnv } from "@/lib/platforms/pinterest";
+import { pinterestRoute } from "@/lib/platforms";
 import { PageHeader } from "@/components/PageHeader";
 
 export const dynamic = "force-dynamic";
@@ -47,7 +48,8 @@ function groupByDay(rows: PinRow[], tz: string, now: number, pick: (p: PinRow) =
 
 export default async function QueuePage() {
   const s = await getSettings();
-  const conn = await getConnection();
+  const route = await pinterestRoute();
+  const conn = route !== "none";
   const now = nowMs();
   const rows = await db
     .select()
@@ -68,7 +70,7 @@ export default async function QueuePage() {
 
       <div className="flex flex-wrap gap-2 text-xs">
         <span className={`badge !px-3 !py-1 ${conn ? "bg-success-soft text-success-ink" : "bg-warn-soft text-warn-ink"}`}>
-          <span className={`h-1.5 w-1.5 rounded-full ${conn ? "bg-success-ink" : "bg-warn-ink"}`} /> Pinterest {conn ? `connected · ${pinterestEnv()}` : "not connected"}
+          <span className={`h-1.5 w-1.5 rounded-full ${conn ? "bg-success-ink" : "bg-warn-ink"}`} /> {route === "direct" ? `Pinterest connected · ${pinterestEnv()}` : route === "make" ? "Posting via Make.com" : "Pinterest not connected"}
         </span>
         <span className="badge !px-3 !py-1 bg-card text-muted ring-1 ring-border">{upcoming.length} upcoming</span>
         <span className="badge !px-3 !py-1 bg-card text-muted ring-1 ring-border">{posted.length} posted</span>

@@ -152,7 +152,8 @@ export async function createBoard(name: string, privacy: "PUBLIC" | "SECRET" = "
   return board;
 }
 
-export const pinterestPublisher: Publisher = {
+/** Talks to the Pinterest API directly with our own OAuth app. */
+export const pinterestDirect: Publisher = {
   platform: "pinterest",
 
   async isConnected() {

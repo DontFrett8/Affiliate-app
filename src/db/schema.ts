@@ -25,6 +25,9 @@ export const settings = pgTable("settings", {
   defaultBoardId: text("default_board_id"),
   /** Last time the external cron called /api/cron/publish (for the Settings health check). */
   lastCronAt: timestamp("last_cron_at", { withTimezone: true }),
+  /** Boards fetched through the Make.com bridge (used until Pinterest is connected directly). */
+  makeBoards: jsonb("make_boards").$type<{ id: string; name: string }[]>(),
+  makeBoardsAt: timestamp("make_boards_at", { withTimezone: true }),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
