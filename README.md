@@ -91,7 +91,7 @@ Each category stores an Amazon Best Sellers target that Canopy accepts:
 - a numeric node ID (`11058281`)
 - or a top-level slug (`bestsellers_beauty`)
 
-Defaults (double-check the ones marked *verify* using **Settings → Browse Amazon best-seller categories**, which drills through Amazon's own tree at 1 request per level):
+Defaults (all node IDs verified via Canopy on 2026-11-04; change any of them with **Settings → Browse Amazon best-seller categories**, which drills through Amazon's own tree at 1 request per level):
 
 | Category | Default target |
 |---|---|
@@ -100,11 +100,11 @@ Defaults (double-check the ones marked *verify* using **Settings → Browse Amaz
 | Makeup | beauty/11058281 |
 | Skincare | beauty/11060451 |
 | Hair Care | beauty/11057241 |
-| Hair Tools | beauty/11057611 *(verify)* |
-| Hairstyles & Accessories | beauty/11057891 *(verify)* |
-| Holiday Decor | home-garden/3206330011 *(verify)* |
+| Hair Tools | beauty/11058091 (Styling Tools & Appliances) |
+| Hairstyles & Accessories | beauty/11057971 (Hair Accessories) |
+| Holiday Decor | home-garden/13679381 (Amazon's "Seasonal Décor", which is the holiday department: ornaments, trees, lights, wreaths…) |
 | Home Decor | home-garden/1063278 |
-| Seasonal Decor | home-garden/3206330011 *(verify — same as Holiday until you pick a child, e.g. Christmas vs. Fall)* |
+| Seasonal Decor | home-garden/13679411 (Wreaths, Garlands & Swags) — swap for e.g. Outdoor Holiday Decorations 285033011 or Home Décor Accents 3735061 |
 | Kitchen Gadgets | kitchen/289745 |
 | Baking | kitchen/289668 |
 
