@@ -60,7 +60,7 @@ export function CategoryBrowser({ categories, canopyConfigured }: { categories: 
   return (
     <div className="card space-y-3">
       <div className="flex items-center justify-between">
-        <strong className="text-sm">Amazon category browser</strong>
+        <strong className="section-title !text-base">Amazon category browser</strong>
         <span className="text-xs text-muted">{requests} request{requests === 1 ? "" : "s"} used</span>
       </div>
       <label className="label">Assign picks to</label>
@@ -74,7 +74,7 @@ export function CategoryBrowser({ categories, canopyConfigured }: { categories: 
       </div>
 
       {current && (
-        <div className="flex items-center justify-between rounded-xl bg-background p-2 text-sm">
+        <div className="flex items-center justify-between rounded-2xl bg-card-2 p-3 text-sm">
           <span>Current: <strong>{current.name}</strong></span>
           <button type="button" className="btn-primary !py-1 !text-xs" disabled={pending} onClick={() => use(current)}>Use this</button>
         </div>
@@ -83,7 +83,7 @@ export function CategoryBrowser({ categories, canopyConfigured }: { categories: 
       {error && <p className="text-xs">{error}</p>}
       {pending && <p className="text-xs text-muted">Loading…</p>}
 
-      <ul className="max-h-72 divide-y divide-border overflow-y-auto rounded-xl border border-border text-sm">
+      <ul className="max-h-72 divide-y divide-border overflow-y-auto rounded-2xl border border-border text-sm">
         {children.map((c) => (
           <li key={c.id + c.url} className="flex items-center justify-between gap-2 px-3 py-2">
             <button type="button" className="min-w-0 flex-1 truncate text-left" onClick={() => into(c)} disabled={pending}>{c.name} ›</button>

@@ -6,6 +6,7 @@ import { suggestSlot } from "@/actions/pins";
 import { toLocalInputValue } from "@/lib/schedule";
 import { getPublisher } from "@/lib/platforms";
 import { PinForm } from "@/components/PinForm";
+import { PageHeader } from "@/components/PageHeader";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Create pin" };
@@ -22,8 +23,8 @@ export default async function NewPinPage({ searchParams }: PageProps<"/pins/new"
   const slot = await suggestSlot();
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-bold">Create pin</h1>
+    <div className="space-y-5">
+      <PageHeader eyebrow="New pin" title={<>Create a <span className="italic text-accent">pin</span></>} />
       <PinForm
         mode="create"
         initial={{

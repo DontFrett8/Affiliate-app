@@ -1,110 +1,150 @@
 import { desc, asc, sql } from "drizzle-orm";
 import Image from "next/image";
 import Link from "next/link";
+import { CalendarHeart, ExternalLink, Pencil, Plus, RotateCcw, Send, Trash2 } from "lucide-react";
 import { db } from "@/db";
 import { pins } from "@/db/schema";
 import { getSettings } from "@/lib/settings";
 import { formatLocal, nowMs } from "@/lib/schedule";
 import { deletePin, postPinNow, retryPin } from "@/actions/pins";
 import { getConnection, pinterestEnv } from "@/lib/platforms/pinterest";
+import { PageHeader } from "@/components/PageHeader";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Queue" };
 
-const statusStyle: Record<string, string> = {
-  scheduled: "bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-200",
-  posting: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200",
-  posted: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200",
-  failed: "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-200",
-  draft: "bg-stone-200 text-stone-800 dark:bg-stone-800 dark:text-stone-200",
+const statusStyle: Record<string, { cls: string; label: string }> = {
+  draft: { cls: "bg-info-soft text-info-ink", label: "Draft" },
+  scheduled: { cls: "bg-accent-soft text-accent-ink", label: "Scheduled" },
+  posting: { cls: "bg-warn-soft text-warn-ink", label: "Posting…" },
+  posted: { cls: "bg-success-soft text-success-ink", label: "Posted" },
+  failed: { cls: "bg-danger-soft text-danger-ink", label: "Failed" },
 };
+
+type PinRow = typeof pins.$inferSelect;
+
+function dayLabel(d: Date, tz: string, now: number) {
+  const key = formatLocal(d, tz, "yyyy-MM-dd");
+  const today = formatLocal(new Date(now), tz, "yyyy-MM-dd");
+  const tomorrow = formatLocal(new Date(now + 86400000), tz, "yyyy-MM-dd");
+  const yesterday = formatLocal(new Date(now - 86400000), tz, "yyyy-MM-dd");
+  if (key === today) return "Today";
+  if (key === tomorrow) return "Tomorrow";
+  if (key === yesterday) return "Yesterday";
+  return formatLocal(d, tz, "EEEE, MMM d");
+}
+
+function groupByDay(rows: PinRow[], tz: string, now: number, pick: (p: PinRow) => Date) {
+  const groups: { label: string; items: PinRow[] }[] = [];
+  for (const p of rows) {
+    const label = dayLabel(pick(p), tz, now);
+    const last = groups[groups.length - 1];
+    if (last && last.label === label) last.items.push(p);
+    else groups.push({ label, items: [p] });
+  }
+  return groups;
+}
 
 export default async function QueuePage() {
   const s = await getSettings();
   const conn = await getConnection();
-  // Upcoming first (soonest at top), then history (latest first).
+  const now = nowMs();
   const rows = await db
     .select()
     .from(pins)
-    .orderBy(sql`case when ${pins.status} in ('scheduled','posting','failed') then 0 else 1 end`, asc(pins.scheduledAt), desc(pins.id));
+    .orderBy(sql`case when ${pins.status} in ('scheduled','posting','failed','draft') then 0 else 1 end`, asc(pins.scheduledAt), desc(pins.id));
   const upcoming = rows.filter((p) => p.status !== "posted");
+  const posted = rows.filter((p) => p.status === "posted").sort((a, b) => (b.postedAt?.getTime() ?? 0) - (a.postedAt?.getTime() ?? 0));
   const drafts = upcoming.filter((p) => p.status === "draft").length;
-  const history = rows.filter((p) => p.status === "posted").reverse();
-  const now = nowMs();
 
   return (
-    <div className="space-y-4">
-      <header className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Queue</h1>
-          <p className="text-xs text-muted">
-            {s.dailyTimes.join(" · ")} {s.timezone.replace("America/", "")} · Pinterest {conn ? `connected (${pinterestEnv()})` : "not connected"}
-          </p>
-        </div>
-        <Link href="/pins/new" className="btn-primary">New pin</Link>
-      </header>
+    <div className="space-y-6">
+      <PageHeader
+        eyebrow="Your schedule"
+        title={<>The <span className="italic text-accent">queue</span></>}
+        subtitle={<>Posts at {s.dailyTimes.map((t) => formatLocal(new Date(`2000-01-01T${t}:00Z`), "UTC", "h:mm a")).join(" · ")}</>}
+        action={<Link href="/pins/new" className="btn-primary !px-4"><Plus size={16} /> New</Link>}
+      />
+
+      <div className="flex flex-wrap gap-2 text-xs">
+        <span className={`badge !px-3 !py-1 ${conn ? "bg-success-soft text-success-ink" : "bg-warn-soft text-warn-ink"}`}>
+          <span className={`h-1.5 w-1.5 rounded-full ${conn ? "bg-success-ink" : "bg-warn-ink"}`} /> Pinterest {conn ? `connected · ${pinterestEnv()}` : "not connected"}
+        </span>
+        <span className="badge !px-3 !py-1 bg-card text-muted ring-1 ring-border">{upcoming.length} upcoming</span>
+        <span className="badge !px-3 !py-1 bg-card text-muted ring-1 ring-border">{posted.length} posted</span>
+      </div>
 
       {!conn && (
-        <p className="card border-amber-300 bg-amber-50 text-sm text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
-          Pinterest isn&apos;t connected yet. Keep building drafts{drafts ? ` (${drafts} so far)` : ""}; once you <Link className="underline" href="/settings">connect</Link>, open each draft and pick a board.
+        <p className="notice notice-info">
+          <span>
+            Keep building drafts{drafts ? ` (${drafts} so far)` : ""}. Once you <Link className="font-semibold underline" href="/settings">connect Pinterest</Link>, open each draft and pick a board.
+          </span>
         </p>
       )}
 
-      {upcoming.length === 0 && history.length === 0 && (
-        <div className="card text-center text-sm text-muted">Nothing scheduled. Create your first pin.</div>
+      {upcoming.length === 0 && posted.length === 0 && (
+        <div className="card flex flex-col items-center gap-3 py-12 text-center">
+          <span className="grid h-16 w-16 place-items-center rounded-full bg-accent-soft text-accent-ink"><CalendarHeart size={28} /></span>
+          <p className="font-display text-xl font-semibold">Your queue is empty</p>
+          <p className="max-w-xs text-sm text-muted">Create your first pin and it will land in the next open time slot.</p>
+          <Link href="/pins/new" className="btn-primary mt-1"><Plus size={16} /> Create a pin</Link>
+        </div>
       )}
 
-      {upcoming.length > 0 && (
-        <section className="space-y-2">
-          <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">Upcoming ({upcoming.length})</h2>
-          <ul className="space-y-2">{upcoming.map((p) => <Row key={p.id} p={p} tz={s.timezone} now={now} />)}</ul>
+      {groupByDay(upcoming, s.timezone, now, (p) => p.scheduledAt).map((g) => (
+        <section key={`u-${g.label}`} className="space-y-2.5">
+          <h2 className="font-display px-1 text-lg font-semibold">{g.label}</h2>
+          <ul className="space-y-2.5">{g.items.map((p) => <Row key={p.id} p={p} tz={s.timezone} now={now} />)}</ul>
         </section>
-      )}
-      {history.length > 0 && (
-        <section className="space-y-2">
-          <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">Posted ({history.length})</h2>
-          <ul className="space-y-2">{history.map((p) => <Row key={p.id} p={p} tz={s.timezone} now={now} />)}</ul>
+      ))}
+
+      {posted.length > 0 && (
+        <section className="space-y-2.5 pt-2">
+          <p className="eyebrow px-1">Recently posted</p>
+          <ul className="space-y-2.5">{posted.slice(0, 20).map((p) => <Row key={p.id} p={p} tz={s.timezone} now={now} />)}</ul>
         </section>
       )}
     </div>
   );
 }
 
-function Row({ p, tz, now }: { p: typeof pins.$inferSelect; tz: string; now: number }) {
+function Row({ p, tz, now }: { p: PinRow; tz: string; now: number }) {
   const overdue = p.status === "scheduled" && p.scheduledAt.getTime() < now - 20 * 60 * 1000;
   const draftLate = p.status === "draft" && p.scheduledAt.getTime() < now;
+  const st = statusStyle[p.status] ?? statusStyle.scheduled;
+  const when = p.status === "posted" && p.postedAt ? p.postedAt : p.scheduledAt;
   return (
-    <li className="card flex gap-3 !p-3">
-      <div className="relative h-24 w-16 shrink-0 overflow-hidden rounded-lg bg-background ring-1 ring-border">
-        <Image src={p.imageUrl} alt="" fill sizes="64px" className="object-cover" unoptimized />
+    <li className="card animate-rise flex gap-3.5 !p-3">
+      <div className="relative aspect-[2/3] w-[4.5rem] shrink-0 overflow-hidden rounded-2xl bg-card-2 ring-1 ring-border/60">
+        <Image src={p.imageUrl} alt="" fill sizes="72px" className="object-cover" unoptimized />
       </div>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          <span className={`badge ${statusStyle[p.status] ?? ""}`}>{p.status}</span>
-          <span className="text-xs text-muted">{formatLocal(p.status === "posted" && p.postedAt ? p.postedAt : p.scheduledAt, tz)}</span>
+      <div className="flex min-w-0 flex-1 flex-col py-0.5">
+        <div className="flex items-center justify-between gap-2">
+          <span className="font-display text-[15px] font-semibold">{formatLocal(when, tz, p.status === "posted" ? "MMM d · h:mm a" : "h:mm a")}</span>
+          <span className={`badge ${st.cls}`}>{st.label}</span>
         </div>
-        <p className="mt-1 truncate text-sm font-medium">{p.title}</p>
-        <p className="truncate text-xs text-muted">{p.boardName || p.boardId || "no board yet"}</p>
-        {p.error && <p className="mt-1 line-clamp-3 text-xs text-red-600">{p.error}</p>}
+        <p className="mt-1 line-clamp-2 text-sm leading-snug">{p.title}</p>
+        <p className="mt-0.5 truncate text-xs text-muted">{p.boardName || (p.boardId ? `Board ${p.boardId}` : "No board yet")}</p>
+        {p.error && <p className="mt-1.5 line-clamp-3 rounded-xl bg-danger-soft px-2.5 py-1.5 text-xs text-danger-ink">{p.error}</p>}
         {p.status === "draft" && (
-          <p className="mt-1 text-xs text-amber-700">Draft: holds this slot but won&apos;t post until you <Link href={`/pins/${p.id}/edit`} className="underline">pick a board</Link>.</p>
+          <p className="mt-1.5 text-xs text-info-ink">Holds this slot. <Link href={`/pins/${p.id}/edit`} className="font-semibold underline">Pick a board</Link> to schedule it.</p>
         )}
-        {draftLate && <p className="mt-1 text-xs text-muted">This slot has passed; when you pick a board, also move the time.</p>}
-        {overdue && !p.error && (
-          <p className="mt-1 text-xs text-amber-700">Past due — is the cron job calling /api/cron/publish? See Settings.</p>
-        )}
-        <div className="mt-2 flex flex-wrap gap-3 text-xs">
+        {draftLate && <p className="mt-1 text-xs text-muted">This time has passed; choose a new one when you add the board.</p>}
+        {overdue && !p.error && <p className="mt-1 text-xs text-warn-ink">Running late. Check the posting job in Settings.</p>}
+        <div className="mt-auto flex flex-wrap items-center gap-1 pt-2 text-xs font-semibold">
           {p.status === "posted" && p.externalUrl && (
-            <a href={p.externalUrl} className="underline" target="_blank" rel="noopener noreferrer">View on Pinterest ↗</a>
+            <a href={p.externalUrl} className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-accent-ink hover:bg-accent-soft" target="_blank" rel="noopener noreferrer"><ExternalLink size={13} /> View pin</a>
           )}
-          {p.status !== "posted" && <Link href={`/pins/${p.id}/edit`} className="underline">Edit</Link>}
+          {p.status !== "posted" && (
+            <Link href={`/pins/${p.id}/edit`} className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-foreground/80 hover:bg-card-2"><Pencil size={13} /> Edit</Link>
+          )}
           {p.status === "failed" && (
-            <form action={retryPin}><input type="hidden" name="id" value={p.id} /><button className="underline">Retry now</button></form>
+            <form action={retryPin}><input type="hidden" name="id" value={p.id} /><button className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-accent-ink hover:bg-accent-soft"><RotateCcw size={13} /> Retry</button></form>
           )}
           {p.status === "scheduled" && (
-            <form action={postPinNow}><input type="hidden" name="id" value={p.id} /><button className="underline">Post now</button></form>
+            <form action={postPinNow}><input type="hidden" name="id" value={p.id} /><button className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-foreground/80 hover:bg-card-2"><Send size={13} /> Post now</button></form>
           )}
-          <form action={deletePin}><input type="hidden" name="id" value={p.id} /><button className="text-red-600 underline">Delete</button></form>
+          <form action={deletePin} className="ml-auto"><input type="hidden" name="id" value={p.id} /><button className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-muted hover:bg-danger-soft hover:text-danger-ink" aria-label="Delete pin"><Trash2 size={13} /></button></form>
         </div>
       </div>
     </li>

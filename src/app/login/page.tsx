@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { Logo } from "@/components/Logo";
 import { cookies } from "next/headers";
 import { createSessionToken, isAuthenticated, passwordMatches, sessionCookieOptions, SESSION_COOKIE } from "@/lib/auth";
 
@@ -21,20 +22,28 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center px-6 py-12">
-      <div className="mb-8 text-center">
-        <div className="mx-auto mb-3 grid h-14 w-14 place-items-center rounded-2xl bg-accent text-2xl text-white">P</div>
-        <h1 className="text-2xl font-bold">PinFlow</h1>
-        <p className="text-sm text-muted">Amazon finds → Pinterest, on autopilot.</p>
+    <main className="relative mx-auto flex w-full max-w-sm flex-1 flex-col justify-center overflow-hidden px-6 py-12">
+      <div aria-hidden className="pointer-events-none absolute -right-24 -top-20 h-72 w-72 rounded-full bg-accent-2/25 blur-3xl" />
+      <div aria-hidden className="pointer-events-none absolute -bottom-24 -left-20 h-72 w-72 rounded-full bg-accent/15 blur-3xl" />
+      <div className="animate-rise relative mb-8 text-center">
+        <div className="mx-auto mb-5 w-fit rounded-[1.4rem] shadow-[0_18px_40px_-16px_rgb(230_0_35/0.6)]">
+          <Logo size={72} />
+        </div>
+        <h1 className="font-display text-4xl font-semibold tracking-tight">
+          Pin<span className="italic text-accent">flow</span>
+        </h1>
+        <p className="font-display mt-2 text-lg italic text-muted">Your Amazon finds, beautifully pinned.</p>
       </div>
-      <form action={login} className="card space-y-3">
+      <form action={login} className="card animate-rise relative space-y-4 bg-card/90 backdrop-blur">
         <input type="hidden" name="next" value={next} />
-        <label className="label" htmlFor="password">Password</label>
-        <input id="password" name="password" type="password" autoComplete="current-password" className="input" autoFocus required />
-        {error && <p className="text-sm text-accent">Wrong password.</p>}
-        <button className="btn-primary w-full" type="submit">Sign in</button>
+        <div>
+          <label className="label" htmlFor="password">Password</label>
+          <input id="password" name="password" type="password" autoComplete="current-password" className="input" autoFocus required />
+        </div>
+        {error && <p className="notice notice-err !py-2.5">That password didn&apos;t match. Try again.</p>}
+        <button className="btn-primary w-full !py-3 text-base" type="submit">Sign in</button>
       </form>
-      <p className="mt-6 text-center text-xs text-muted">Single-user app. The password is the APP_PASSWORD environment variable.</p>
+      <p className="relative mt-6 text-center text-xs text-muted">A private studio for one. ✿</p>
     </main>
   );
 }

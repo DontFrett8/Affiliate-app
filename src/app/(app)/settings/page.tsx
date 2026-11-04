@@ -9,6 +9,8 @@ import { addCategory, deleteCategory, moveCategory, restoreDefaultCategories, sa
 import { callbackUrl, getConnection, pinterestEnv } from "@/lib/platforms/pinterest";
 import { getPublisher } from "@/lib/platforms";
 import { CategoryBrowser } from "@/components/CategoryBrowser";
+import { PageHeader } from "@/components/PageHeader";
+import { LogOut } from "lucide-react";
 import { formatLocal, nowMs } from "@/lib/schedule";
 
 export const dynamic = "force-dynamic";
@@ -37,25 +39,26 @@ export default async function SettingsPage({ searchParams }: PageProps<"/setting
 
   return (
     <div className="space-y-6">
-      <header className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Settings</h1>
-        <form action="/api/auth/logout" method="post"><button className="btn-ghost text-xs">Sign out</button></form>
-      </header>
+      <PageHeader
+        eyebrow="Your studio"
+        title={<>Settings &amp; <span className="italic text-accent">style</span></>}
+        action={<form action="/api/auth/logout" method="post"><button className="btn-secondary !px-3.5 !py-2 !text-xs"><LogOut size={13} /> Sign out</button></form>}
+      />
 
       {/* Pinterest */}
       <section className="card space-y-3">
-        <h2 className="font-semibold">Pinterest</h2>
-        {flash === "connected" && <p className="rounded-xl bg-emerald-50 p-2 text-sm text-emerald-800">Pinterest connected 🎉</p>}
-        {flash === "disconnected" && <p className="rounded-xl bg-stone-100 p-2 text-sm">Disconnected.</p>}
-        {flash === "error" && <p className="rounded-xl bg-red-50 p-2 text-sm text-red-700">Pinterest error: {flashMsg}</p>}
+        <h2 className="section-title">Pinterest</h2>
+        {flash === "connected" && <p className="notice notice-ok">Pinterest connected. You&apos;re ready to post.</p>}
+        {flash === "disconnected" && <p className="notice notice-info">Disconnected.</p>}
+        {flash === "error" && <p className="notice notice-err">Pinterest error: {flashMsg}</p>}
         {conn ? (
           <>
             <p className="text-sm">
               Connected as <strong>@{conn.accountName ?? "unknown"}</strong> · {conn.environment} API · {boards.length} boards
               {conn.accessExpiresAt && <> · token renews {formatLocal(conn.accessExpiresAt, s.timezone, "MMM d")}</>}
             </p>
-            {sp.board === "created" && <p className="rounded-xl bg-emerald-50 p-2 text-sm text-emerald-800">Board created.</p>}
-            {sp.board === "error" && <p className="rounded-xl bg-red-50 p-2 text-sm text-red-700">Couldn&apos;t create board: {flashMsg}</p>}
+            {sp.board === "created" && <p className="notice notice-ok">Board created.</p>}
+            {sp.board === "error" && <p className="notice notice-err">Couldn&apos;t create board: {flashMsg}</p>}
             <form action={createPinterestBoard} className="flex gap-2">
               <input name="name" className="input" placeholder="New board name (sandbox starts empty)" required />
               <select name="privacy" className="input !w-auto" defaultValue="PUBLIC"><option value="PUBLIC">Public</option><option value="SECRET">Secret</option></select>
@@ -63,14 +66,14 @@ export default async function SettingsPage({ searchParams }: PageProps<"/setting
             </form>
             <div className="flex gap-2">
               <a href="/api/pinterest/auth" className="btn-secondary">Reconnect</a>
-              <form action="/api/pinterest/disconnect" method="post"><button className="btn-ghost text-red-600">Disconnect</button></form>
+              <form action="/api/pinterest/disconnect" method="post"><button className="btn-ghost text-danger-ink">Disconnect</button></form>
             </div>
           </>
         ) : (
           <>
             <p className="text-sm text-muted">Connect once; tokens are stored encrypted and refreshed automatically.</p>
             <a href={env.pinterest ? "/api/pinterest/auth" : "#"} className={`btn-primary ${env.pinterest ? "" : "pointer-events-none opacity-50"}`}>Connect Pinterest</a>
-            {!env.pinterest && <p className="text-xs text-amber-700">Set PINTEREST_APP_ID and PINTEREST_APP_SECRET first.</p>}
+            {!env.pinterest && <p className="text-xs text-warn-ink">Set PINTEREST_APP_ID and PINTEREST_APP_SECRET first.</p>}
           </>
         )}
         <details className="text-xs text-muted">
@@ -86,7 +89,7 @@ export default async function SettingsPage({ searchParams }: PageProps<"/setting
 
       {/* General settings */}
       <form action={saveSettings} className="card space-y-4">
-        <h2 className="font-semibold">Defaults</h2>
+        <h2 className="section-title">Defaults</h2>
         <div>
           <label className="label" htmlFor="associateTag">Amazon Associate tag</label>
           <input id="associateTag" name="associateTag" className="input" defaultValue={s.associateTag} placeholder="yourname-20" autoCapitalize="off" />
@@ -128,14 +131,14 @@ export default async function SettingsPage({ searchParams }: PageProps<"/setting
 
       {/* Categories */}
       <section className="space-y-3">
-        <h2 className="font-semibold">Categories</h2>
+        <h2 className="section-title px-1">Categories</h2>
         <p className="text-xs text-muted">
           Each category points at an Amazon Best Sellers page (URL, numeric node ID, or a slug like <code>bestsellers_beauty</code>). Use the browser to pick sub-categories exactly.
         </p>
         <CategoryBrowser categories={cats.map((c) => ({ id: c.id, name: c.name }))} canopyConfigured={env.canopy} />
         <ul className="space-y-2">
           {cats.map((c, i) => (
-            <li key={c.id} className="card space-y-2 !p-3">
+            <li key={c.id} className="card space-y-2.5 !p-4">
               <form action={updateCategory} className="space-y-2">
                 <input type="hidden" name="id" value={c.id} />
                 <div className="flex gap-2">
@@ -143,8 +146,8 @@ export default async function SettingsPage({ searchParams }: PageProps<"/setting
                   <button className="btn-secondary shrink-0">Save</button>
                 </div>
                 <input name="amazonCategory" className="input !text-xs font-mono" defaultValue={c.amazonCategory} placeholder="https://www.amazon.com/gp/bestsellers/beauty/11058281" aria-label="Amazon category" />
-                {c.amazonCategoryName && <p className="text-xs text-emerald-700">Amazon: {c.amazonCategoryName}</p>}
-                {c.lastError && <p className="text-xs text-red-600">{c.lastError}</p>}
+                {c.amazonCategoryName && <p className="text-xs text-success-ink">Amazon: {c.amazonCategoryName}</p>}
+                {c.lastError && <p className="text-xs text-danger-ink">{c.lastError}</p>}
               </form>
               {c.childCategories && c.childCategories.length > 0 && (
                 <details className="text-xs">
@@ -167,13 +170,13 @@ export default async function SettingsPage({ searchParams }: PageProps<"/setting
               <div className="flex items-center gap-3 text-xs">
                 <form action={moveCategory}><input type="hidden" name="id" value={c.id} /><input type="hidden" name="dir" value="up" /><button disabled={i === 0} className="underline disabled:opacity-30">↑</button></form>
                 <form action={moveCategory}><input type="hidden" name="id" value={c.id} /><input type="hidden" name="dir" value="down" /><button disabled={i === cats.length - 1} className="underline disabled:opacity-30">↓</button></form>
-                <form action={deleteCategory} className="ml-auto"><input type="hidden" name="id" value={c.id} /><button className="text-red-600 underline">Remove</button></form>
+                <form action={deleteCategory} className="ml-auto"><input type="hidden" name="id" value={c.id} /><button className="text-danger-ink underline">Remove</button></form>
               </div>
             </li>
           ))}
         </ul>
-        <form action={addCategory} className="card space-y-2">
-          <strong className="text-sm">Add category</strong>
+        <form action={addCategory} className="card-tinted space-y-2.5">
+          <strong className="font-display text-base">Add a category</strong>
           <input name="name" className="input" placeholder="Name (e.g. Candles)" required />
           <input name="amazonCategory" className="input !text-xs font-mono" placeholder="Amazon best-sellers URL (optional, can pick later)" />
           <button className="btn-secondary w-full">Add</button>
@@ -183,21 +186,21 @@ export default async function SettingsPage({ searchParams }: PageProps<"/setting
 
       {/* Automation */}
       <section className="card space-y-2 text-sm">
-        <h2 className="font-semibold">Posting job</h2>
-        <p className={`flex items-center gap-2 rounded-xl p-2 text-sm ${cronHealthy ? "bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200" : "bg-amber-50 text-amber-900 dark:bg-amber-950/40 dark:text-amber-200"}`}>
-          <span className={`inline-block h-2 w-2 rounded-full ${cronHealthy ? "bg-emerald-500" : "bg-amber-500"}`} />
+        <h2 className="section-title">Posting job</h2>
+        <p className={`notice items-center ${cronHealthy ? "notice-ok" : "notice-warn"}`}>
+          <span className={`inline-block h-2 w-2 shrink-0 rounded-full ${cronHealthy ? "bg-success-ink" : "bg-warn-ink"}`} />
           {s.lastCronAt
             ? <>Last check-in: <strong>{formatLocal(s.lastCronAt, s.timezone, "MMM d, h:mm a")}</strong> ({cronAgeMin} min ago){cronHealthy ? " · working" : " · no recent check-ins"}</>
             : <>No check-ins yet. The cron job hasn&apos;t reached PinFlow.</>}
         </p>
         <p className="text-muted">Pinterest has no scheduler, so something must call this URL every 5–15 minutes. On Vercel Hobby, a free cron-job.org job does it; on Vercel Pro the included <code>vercel.json</code> cron runs every 10 min automatically.</p>
-        <p className="break-all rounded-xl bg-background p-2 font-mono text-xs">{cronUrl}?key=YOUR_CRON_SECRET</p>
+        <p className="break-all rounded-2xl bg-card-2 p-3 font-mono text-xs">{cronUrl}?key=YOUR_CRON_SECRET</p>
         <p className="text-xs text-muted">Retries: failed pins are retried automatically on the next runs (up to 3 attempts); “Retry now” in the queue always works.</p>
       </section>
 
       {/* Env status */}
       <section className="card space-y-1 text-sm">
-        <h2 className="font-semibold">Environment</h2>
+        <h2 className="section-title">Environment</h2>
         <Status ok={true} label="DATABASE_URL (you're seeing this page)" />
         <Status ok={env.canopy} label="CANOPY_API_KEY" />
         <Status ok={env.blob} label="BLOB_READ_WRITE_TOKEN" />
@@ -212,7 +215,7 @@ export default async function SettingsPage({ searchParams }: PageProps<"/setting
 function Status({ ok, label }: { ok: boolean; label: string }) {
   return (
     <p className="flex items-center gap-2 text-xs">
-      <span className={`inline-block h-2 w-2 rounded-full ${ok ? "bg-emerald-500" : "bg-red-500"}`} />
+      <span className={`inline-block h-2 w-2 rounded-full ${ok ? "bg-success-ink" : "bg-danger-ink"}`} />
       <code>{label}</code>
     </p>
   );

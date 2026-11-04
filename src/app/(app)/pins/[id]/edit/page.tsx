@@ -6,6 +6,7 @@ import { getSettings } from "@/lib/settings";
 import { toLocalInputValue } from "@/lib/schedule";
 import { getPublisher } from "@/lib/platforms";
 import { PinForm } from "@/components/PinForm";
+import { PageHeader } from "@/components/PageHeader";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Edit pin" };
@@ -21,9 +22,9 @@ export default async function EditPinPage({ params }: PageProps<"/pins/[id]/edit
   const boards = connected ? await publisher.listBoards().catch(() => []) : [];
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-bold">Edit pin</h1>
-      {pin.status === "posted" && <p className="card text-sm">This pin was already posted; edits here won&apos;t change it on Pinterest.</p>}
+    <div className="space-y-5">
+      <PageHeader eyebrow="Make changes" title={<>Edit <span className="italic text-accent">pin</span></>} />
+      {pin.status === "posted" && <p className="notice notice-info">This pin was already posted; edits here won&apos;t change it on Pinterest.</p>}
       <PinForm
         mode="edit"
         initial={{

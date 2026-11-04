@@ -7,6 +7,8 @@ import { addManualProducts, refreshAllCategories, refreshCategory, removeProduct
 import { affiliateLink } from "@/lib/amazon";
 import { ProductCard, type ProductView } from "@/components/ProductCard";
 import { SelectionBar } from "@/components/SelectionBar";
+import { PageHeader } from "@/components/PageHeader";
+import { CheckCircle2, Clock3, Link as LinkIcon, RefreshCw, ShoppingBag, Sparkles } from "lucide-react";
 
 type CategoryView = {
   id: number;
@@ -108,22 +110,31 @@ export function FindView(props: {
   const fmt = (iso: string | null) =>
     iso ? new Date(iso).toLocaleString("en-US", { timeZone: props.timezone, month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : "never";
 
+  const greeting = (() => {
+    const h = Number(new Date().toLocaleString("en-US", { timeZone: props.timezone, hour: "numeric", hour12: false }));
+    return h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
+  })();
+
   return (
-    <div className="space-y-4">
-      <header className="flex items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold">Find</h1>
-          <p className="text-xs text-muted">Canopy requests this month: {props.canopyThisMonth} / 100 free</p>
-        </div>
-        <button className="btn-primary whitespace-nowrap" disabled={pending || !props.canopyConfigured} onClick={() => refresh("all")} title={props.canopyConfigured ? "" : "Set CANOPY_API_KEY first"}>
-          {busyId === "all" ? "Refreshing…" : "Get top sellers"}
-        </button>
-      </header>
+    <div className="space-y-5">
+      <PageHeader
+        eyebrow={greeting}
+        title={<>What&apos;s <span className="italic text-accent">trending</span> today</>}
+        subtitle={<span className="inline-flex items-center gap-1.5"><Sparkles size={13} className="text-accent-2" /> {props.canopyThisMonth} of 100 free lookups used this month</span>}
+      />
+
+      <button
+        className="btn-primary w-full !py-3.5 text-[15px]"
+        disabled={pending || !props.canopyConfigured}
+        onClick={() => refresh("all")}
+        title={props.canopyConfigured ? "" : "Set CANOPY_API_KEY first"}
+      >
+        <RefreshCw size={17} className={busyId === "all" ? "animate-spin" : ""} />
+        {busyId === "all" ? "Gathering best sellers…" : `Get top sellers · all ${props.categories.length} categories`}
+      </button>
 
       {!props.canopyConfigured && (
-        <p className="card border-amber-300 bg-amber-50 text-sm text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
-          CANOPY_API_KEY isn&apos;t set yet, so refreshing is disabled. You can still paste Amazon links manually below.
-        </p>
+        <p className="notice notice-warn">CANOPY_API_KEY isn&apos;t set yet, so refreshing is off. You can still paste Amazon links below.</p>
       )}
 
       {props.categories.length === 0 ? (
@@ -131,17 +142,14 @@ export function FindView(props: {
           No categories yet. <Link className="underline" href="/settings">Add some in Settings</Link>.
         </p>
       ) : (
-        <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none]">
+        <div className="-mx-4 flex gap-2 overflow-x-auto px-4 py-1 [scrollbar-width:none]">
           {props.categories.map((c) => {
             const n = props.products.filter((p) => p.categoryId === c.id && selected[p.asin]).length;
+            const on = c.id === activeId;
             return (
-              <button
-                key={c.id}
-                onClick={() => setActiveId(c.id)}
-                className={`shrink-0 rounded-full border px-3 py-1.5 text-sm font-medium ${c.id === activeId ? "border-accent bg-accent text-white" : "border-border bg-card"}`}
-              >
+              <button key={c.id} onClick={() => setActiveId(c.id)} className={`chip ${on ? "chip-on" : "chip-off"}`}>
                 {c.name}
-                {n > 0 && <span className="ml-1 rounded-full bg-white/90 px-1.5 text-[10px] text-accent">{n}</span>}
+                {n > 0 && <span className={`grid h-5 min-w-5 place-items-center rounded-full px-1 text-[10px] font-bold ${on ? "bg-white text-accent" : "bg-accent-soft text-accent-ink"}`}>{n}</span>}
               </button>
             );
           })}
@@ -149,36 +157,36 @@ export function FindView(props: {
       )}
 
       {active && (
-        <section className="space-y-3">
-          <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted">
-            <span>
-              Last refreshed: <strong className="text-foreground">{fmt(active.lastRefreshedAt)}</strong>
-              {active.amazonCategoryName && <> · Amazon: {active.amazonCategoryName}</>}
-            </span>
+        <section className="space-y-4">
+          <div className="card-tinted flex flex-wrap items-center justify-between gap-3 !py-3.5">
+            <div className="min-w-0 text-xs leading-relaxed text-muted">
+              <p className="font-display text-base font-semibold text-foreground">{active.name}</p>
+              <p className="inline-flex items-center gap-1"><Clock3 size={12} /> Updated {fmt(active.lastRefreshedAt)}{active.amazonCategoryName && <> · {active.amazonCategoryName}</>}</p>
+            </div>
             <div className="flex gap-2">
-              <button className="btn-secondary !py-1.5 !text-xs" disabled={pending || !props.canopyConfigured || !active.amazonCategory} onClick={() => refresh(active.id)}>
-                {busyId === active.id ? "Refreshing…" : "Refresh this"}
+              <button className="btn-secondary !px-3.5 !py-2 !text-xs" disabled={pending || !props.canopyConfigured || !active.amazonCategory} onClick={() => refresh(active.id)}>
+                <RefreshCw size={13} className={busyId === active.id ? "animate-spin" : ""} /> Refresh
               </button>
-              <button className="btn-secondary !py-1.5 !text-xs" onClick={() => setPasteOpen((v) => !v)}>
-                Paste links
+              <button className={`!px-3.5 !py-2 !text-xs ${pasteOpen ? "btn-soft" : "btn-secondary"}`} onClick={() => setPasteOpen((v) => !v)}>
+                <LinkIcon size={13} /> Paste links
               </button>
             </div>
           </div>
 
-          {active.lastError && <p className="rounded-xl bg-red-50 p-3 text-xs text-red-700 dark:bg-red-950/40 dark:text-red-300">Last error: {active.lastError}</p>}
+          {active.lastError && <p className="notice notice-err text-xs">Last error: {active.lastError}</p>}
           {!active.amazonCategory && (
-            <p className="text-xs text-amber-700">
-              This category has no Amazon best-sellers page set. <Link className="underline" href="/settings">Fix in Settings</Link>.
+            <p className="notice notice-warn text-xs">
+              This category has no Amazon best-sellers page yet. <Link className="font-semibold underline" href="/settings">Set it in Settings</Link>.
             </p>
           )}
 
           {pasteOpen && (
-            <div className="card space-y-2">
-              <label className="label">Paste Amazon links or ASINs (one per line)</label>
-              <textarea className="input min-h-28 font-mono text-sm" value={pasteText} onChange={(e) => setPasteText(e.target.value)} placeholder="https://www.amazon.com/dp/B0ABC12345&#10;B0XYZ67890" />
-              <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" checked={lookup} onChange={(e) => setLookup(e.target.checked)} disabled={!props.canopyConfigured} />
-                Look up title/image/price (1 Canopy request per new link)
+            <div className="card animate-rise space-y-3">
+              <label className="label">Paste Amazon links or ASINs, one per line</label>
+              <textarea className="input min-h-28 font-mono !text-sm" value={pasteText} onChange={(e) => setPasteText(e.target.value)} placeholder="https://www.amazon.com/dp/B0ABC12345&#10;B0XYZ67890" />
+              <label className="flex items-center gap-2 text-sm text-muted">
+                <input type="checkbox" className="h-4 w-4 accent-[var(--accent)]" checked={lookup} onChange={(e) => setLookup(e.target.checked)} disabled={!props.canopyConfigured} />
+                Fetch name, photo and price (1 lookup per new link)
               </label>
               <div className="flex gap-2">
                 <button className="btn-primary" disabled={pending || !pasteText.trim()} onClick={submitPaste}>Add to {active.name}</button>
@@ -188,11 +196,13 @@ export function FindView(props: {
           )}
 
           {list.length === 0 ? (
-            <div className="card text-center text-sm text-muted">
-              Nothing cached for {active.name} yet. Tap <strong>Refresh this</strong> (1 request) or paste links.
+            <div className="card flex flex-col items-center gap-3 py-10 text-center">
+              <span className="grid h-14 w-14 place-items-center rounded-full bg-accent-soft text-accent-ink"><ShoppingBag size={24} /></span>
+              <p className="font-display text-lg font-semibold">Nothing here yet</p>
+              <p className="max-w-xs text-sm text-muted">Tap <strong>Refresh</strong> to pull today&apos;s {active.name.toLowerCase()} best sellers, or paste your own links.</p>
             </div>
           ) : (
-            <ul className="grid grid-cols-2 gap-3">
+            <ul className="grid grid-cols-2 gap-3.5">
               {list.map((p) => (
                 <ProductCard
                   key={p.id}
@@ -216,7 +226,9 @@ export function FindView(props: {
       />
 
       {toast && (
-        <div className="fixed inset-x-4 bottom-44 z-50 mx-auto max-w-md rounded-xl bg-foreground px-4 py-3 text-center text-sm text-background shadow-lg">{toast}</div>
+        <div role="status" className="animate-rise fixed inset-x-4 top-[max(env(safe-area-inset-top),1rem)] z-50 mx-auto flex max-w-md items-center gap-2 rounded-full bg-foreground px-5 py-3 text-sm font-medium text-background shadow-rose">
+          <CheckCircle2 size={16} className="shrink-0 text-accent-2" /> {toast}
+        </div>
       )}
     </div>
   );
