@@ -16,6 +16,6 @@ export const DEFAULT_CATEGORIES: { name: string; amazonCategory: string; note?: 
   { name: "Holiday Decor", amazonCategory: "https://www.amazon.com/gp/bestsellers/home-garden/13679381" }, // Amazon "Seasonal Décor" = holiday dept
   { name: "Home Decor", amazonCategory: "https://www.amazon.com/gp/bestsellers/home-garden/1063278" },
   { name: "Seasonal Decor", amazonCategory: "https://www.amazon.com/gp/bestsellers/home-garden/13679411", note: "Wreaths, Garlands & Swags — swap for another child in Settings" },
-  { name: "Kitchen Gadgets", amazonCategory: "https://www.amazon.com/gp/bestsellers/kitchen/289745" },
+  { name: "Kitchen Gadgets", amazonCategory: "https://www.amazon.com/gp/bestsellers/kitchen/289754" },
   { name: "Baking", amazonCategory: "https://www.amazon.com/gp/bestsellers/kitchen/289668" },
 ];

@@ -23,12 +23,24 @@ For every numbered product, return:
 
 Label every product in the list. Do not skip any.`;
 
-/** Rough fallback when AI isn't available: first few title words stand in for both labels. */
+const SIZE_WORDS = /\b(\d+[\w.-]*|pack|pcs?|pieces?|set|count|ct|oz|inch|in|ml|l|lb|lbs|cup|cups|qt|quart|small|medium|large|xl|xxl|mini|black|white|silver|gold|grey|gray|pink|blue|red|green|clear)\b/g;
+
+/** First phrase of an Amazon title, before commas, dashes, pipes, "with" or "for". */
+function headPhrase(title: string) {
+  return title.split(/,|\s[-–—|]\s|\||\(|\bwith\b|\bfor\b/i)[0].toLowerCase().replace(/[^a-z0-9&\s]/g, " ");
+}
+
+/**
+ * Fallback when AI isn't available. Amazon titles usually end their first phrase with the item noun
+ * ("… Drip Coffee Maker", "… Swivel Peeler"), so the last two words of that phrase approximate the type.
+ */
 export function heuristicLabels(titles: string[]): Labeled[] {
   return titles.map((t) => {
-    const words = t.toLowerCase().replace(/[^a-z0-9\s]/g, " ").split(/\s+/).filter(Boolean);
-    const key = words.slice(0, 4).join(" ");
-    return { type: key, variant: key };
+    const head = headPhrase(t).split(/\s+/).filter(Boolean);
+    const variant = head.slice(0, 4).join(" ");
+    const nouns = head.join(" ").replace(SIZE_WORDS, " ").split(/\s+/).filter((w) => w.length > 1);
+    const type = nouns.slice(-2).join(" ") || variant;
+    return { type, variant };
   });
 }
 
