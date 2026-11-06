@@ -24,10 +24,13 @@ You'll build two small scenarios. Each one starts with a webhook (a private web 
 
 ## Part 2 — Teach Make what PinFlow sends
 
-5. In each scenario, click the webhook module and then **Redetermine data structure**. Make now waits for a sample.
+Do this in one scenario at a time.
+
+5. Open the scenario and click **Run once** (bottom left). Make starts waiting for data.
 6. In PinFlow, open **Settings → Make.com bridge** and tap **Send setup samples**.
-   Both webhooks should say **Successfully determined**.
-   (Samples carry a dummy key, so they never post anything.)
+7. Back in Make, a small bubble appears on the webhook circle. Make has learned the data. Click **Save**.
+8. Repeat steps 5 to 7 in the other scenario.
+   (Samples carry a dummy key, so they never post anything. "Redetermine data structure" only appears after this first run, so you don't need it.)
 
 ## Part 3 — Finish the "Post pin" scenario
 
