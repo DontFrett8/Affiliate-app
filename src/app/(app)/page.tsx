@@ -26,6 +26,7 @@ export default async function FindPage() {
       associateTag={s.associateTag}
       timezone={s.timezone}
       canopyThisMonth={Number(canopyThisMonth)}
+      canopyLimit={s.canopyMonthlyLimit}
       canopyConfigured={!!process.env.CANOPY_API_KEY}
     />
   );

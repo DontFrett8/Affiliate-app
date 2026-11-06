@@ -26,7 +26,7 @@ Rules (Amazon Associates and Pinterest policy):
 - US English.`;
 
 /** Uses ANTHROPIC_API_KEY when set, otherwise Vercel AI Gateway via the deployment's OIDC token. */
-async function client(): Promise<{ client: Anthropic; model: string; direct: boolean } | null> {
+export async function aiClient(): Promise<{ client: Anthropic; model: string; direct: boolean } | null> {
   if (process.env.ANTHROPIC_API_KEY) {
     return { client: new Anthropic(), model: process.env.PINFLOW_AI_MODEL || "claude-opus-5-5", direct: true };
   }
@@ -85,7 +85,7 @@ export async function suggestPinCopy(opts: {
   const fallback = (note: string) => ({ ...templateCopy(products, categoryName, hashtags, disclosure), note });
   if (!products.length) return fallback("No products selected.");
 
-  const c = await client();
+  const c = await aiClient();
   if (!c) return fallback("AI isn't set up, so this is a template.");
 
   const tail = [hashtags.trim(), disclosure.trim()].filter(Boolean).join("\n\n");

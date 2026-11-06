@@ -20,6 +20,7 @@ export async function saveSettings(formData: FormData) {
       defaultHashtags: String(formData.get("defaultHashtags") ?? "").trim(),
       disclosureText: disclosure || "#ad As an Amazon Associate I earn from qualifying purchases.",
       defaultBoardId: String(formData.get("defaultBoardId") ?? "").trim() || null,
+      canopyMonthlyLimit: Math.max(0, Math.min(5000, Math.round(Number(formData.get("canopyMonthlyLimit")) || 100))),
       updatedAt: new Date(),
     })
     .where(eq(settings.id, 1));
@@ -33,6 +34,7 @@ export async function addCategory(formData: FormData) {
   await db.insert(categories).values({
     name,
     amazonCategory: String(formData.get("amazonCategory") ?? "").trim(),
+    uniqueTypes: formData.get("uniqueTypes") !== "off",
     sortOrder: (max ?? 0) + 1,
   });
   revalidatePath("/", "layout");
@@ -50,6 +52,7 @@ export async function updateCategory(formData: FormData) {
     .set({
       name,
       amazonCategory,
+      ...(formData.has("uniqueTypesShown") ? { uniqueTypes: formData.get("uniqueTypes") === "on" } : {}),
       // Reset cached category info if the Amazon target changed.
       ...(changed ? { amazonCategoryName: null, childCategories: null, lastRefreshedAt: null, lastError: null } : {}),
     })

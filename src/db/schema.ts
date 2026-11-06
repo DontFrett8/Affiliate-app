@@ -26,6 +26,8 @@ export const settings = pgTable("settings", {
   /** Last time the external cron called /api/cron/publish (for the Settings health check). */
   lastCronAt: timestamp("last_cron_at", { withTimezone: true }),
   /** Boards fetched through the Make.com bridge (used until Pinterest is connected directly). */
+  /** Hard cap on Canopy lookups per calendar month (100 = free tier). */
+  canopyMonthlyLimit: integer("canopy_monthly_limit").notNull().default(100),
   makeBoards: jsonb("make_boards").$type<{ id: string; name: string }[]>(),
   makeBoardsAt: timestamp("make_boards_at", { withTimezone: true }),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
@@ -44,6 +46,8 @@ export const categories = pgTable("categories", {
   /** Child categories returned by Canopy, so the user can drill down without extra requests. */
   childCategories: jsonb("child_categories").$type<{ id: string; name: string; url: string }[]>(),
   sortOrder: integer("sort_order").notNull().default(0),
+  /** true: keep one product per item type (kitchen, beauty…). false: allow similar items, only drop near-copies (fashion, jewelry). */
+  uniqueTypes: boolean("unique_types").notNull().default(true),
   lastRefreshedAt: timestamp("last_refreshed_at", { withTimezone: true }),
   lastError: text("last_error"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -64,6 +68,8 @@ export const products = pgTable(
     rating: real("rating"),
     ratingsTotal: integer("ratings_total"),
     rank: integer("rank"),
+    /** Short generic label, e.g. "vegetable peeler", from the AI sort step. */
+    productType: text("product_type"),
     /** "canopy" = fetched best seller, "manual" = pasted link. */
     source: text("source").notNull().default("canopy"),
     fetchedAt: timestamp("fetched_at", { withTimezone: true }).notNull().defaultNow(),
@@ -111,6 +117,29 @@ export const connections = pgTable("connections", {
   connectedAt: timestamp("connected_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+/** Cached Amazon search results so repeating a search costs nothing for 7 days. */
+export const searchCache = pgTable(
+  "search_cache",
+  {
+    id: serial("id").primaryKey(),
+    cacheKey: text("cache_key").notNull(),
+    results: jsonb("results").$type<SearchItem[]>().notNull(),
+    totalPages: integer("total_pages"),
+    fetchedAt: timestamp("fetched_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("search_cache_key_idx").on(t.cacheKey)],
+);
+
+export type SearchItem = {
+  asin: string;
+  title: string;
+  imageUrl: string | null;
+  priceDisplay: string | null;
+  rating: number | null;
+  ratingsTotal: number | null;
+  sponsored: boolean;
+};
 
 /** Every paid API call we make, so the UI can show monthly usage. */
 export const apiUsage = pgTable("api_usage", {

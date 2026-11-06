@@ -8,6 +8,7 @@ import { affiliateLink } from "@/lib/amazon";
 import { ProductCard, type ProductView } from "@/components/ProductCard";
 import { SelectionBar } from "@/components/SelectionBar";
 import { PageHeader } from "@/components/PageHeader";
+import { SearchPanel } from "@/components/SearchPanel";
 import { CheckCircle2, Clock3, Link as LinkIcon, RefreshCw, ShoppingBag, Sparkles } from "lucide-react";
 
 type CategoryView = {
@@ -27,8 +28,10 @@ export function FindView(props: {
   associateTag: string;
   timezone: string;
   canopyThisMonth: number;
+  canopyLimit: number;
   canopyConfigured: boolean;
 }) {
+  const [mode, setMode] = useState<"best" | "search">("best");
   const router = useRouter();
   const [activeId, setActiveId] = useState<number | null>(props.categories[0]?.id ?? null);
   const [selected, setSelected] = useState<Record<string, ProductView>>({});
@@ -87,7 +90,7 @@ export function FindView(props: {
         setToast(`Refreshed ${ok}/${res.length} categories${bad.length ? ` · failed: ${bad.map((b) => b.name).join(", ")}` : ""}`);
       } else {
         const r = await refreshCategory(id);
-        setToast(r.ok ? `Got ${r.count} best sellers` : r.error);
+        setToast(r.ok ? `Kept ${r.count} varied picks from ${r.scanned} best sellers` : r.error);
       }
       setBusyId(null);
       router.refresh();
@@ -120,8 +123,33 @@ export function FindView(props: {
       <PageHeader
         eyebrow={greeting}
         title={<>What&apos;s <span className="italic text-accent">trending</span> today</>}
-        subtitle={<span className="inline-flex items-center gap-1.5"><Sparkles size={13} className="text-accent-2" /> {props.canopyThisMonth} of 100 free lookups used this month</span>}
+        subtitle={<span className="inline-flex items-center gap-1.5"><Sparkles size={13} className="text-accent-2" /> {props.canopyThisMonth} of {props.canopyLimit} lookups used this month</span>}
       />
+
+      <div role="tablist" aria-label="Find products" className="grid grid-cols-2 gap-1 rounded-full bg-card-2 p-1 ring-1 ring-border/60">
+        {([["best", "Best sellers"], ["search", "Search Amazon"]] as const).map(([value, label]) => (
+          <button
+            key={value}
+            role="tab"
+            aria-selected={mode === value}
+            onClick={() => setMode(value)}
+            className={`rounded-full py-2.5 text-sm font-semibold transition ${mode === value ? "bg-gradient-to-br from-accent to-accent-2 text-white shadow-[0_6px_16px_-8px_rgb(230_0_35/0.6)]" : "text-muted hover:text-foreground"}`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {mode === "search" ? (
+        <SearchPanel
+          associateTag={props.associateTag}
+          isSelected={(asin) => !!selected[asin]}
+          onToggle={toggle}
+          onToast={setToast}
+          lookupsLeft={Math.max(0, props.canopyLimit - props.canopyThisMonth)}
+        />
+      ) : (
+      <>
 
       <button
         className="btn-primary w-full !py-3.5 text-[15px]"
@@ -216,6 +244,9 @@ export function FindView(props: {
             </ul>
           )}
         </section>
+      )}
+
+      </>
       )}
 
       <SelectionBar

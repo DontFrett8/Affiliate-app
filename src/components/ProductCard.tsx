@@ -16,6 +16,8 @@ export type ProductView = {
   rank: number | null;
   source: string;
   fetchedAt: string;
+  productType?: string | null;
+  sponsored?: boolean;
 };
 
 export function ProductCard({ product: p, checked, onToggle, link, onRemove }: { product: ProductView; checked: boolean; onToggle: () => void; link: string; onRemove?: () => void }) {
@@ -43,6 +45,11 @@ export function ProductCard({ product: p, checked, onToggle, link, onRemove }: {
         </span>
       </button>
       <div className="flex flex-1 flex-col gap-1.5 p-3">
+        {(p.productType || p.sponsored) && (
+          <p className="truncate text-[10px] font-semibold uppercase tracking-[0.12em] text-accent-ink">
+            {p.sponsored ? "Sponsored" : p.productType}
+          </p>
+        )}
         <p className="line-clamp-2 text-[13px] leading-snug text-foreground/90" title={p.title}>{p.title}</p>
         <div className="mt-auto flex items-center justify-between gap-2 text-xs">
           <span className="font-display text-[15px] font-semibold">{p.priceDisplay ?? ""}</span>

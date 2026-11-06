@@ -11,4 +11,5 @@
 - Vercel team `dont-frett`, project `pinflow`; production deploys from branch `claude/pinflow-pinterest-scheduler-cmka3p`.
 - Posting is triggered every 10 min by an external cron-job.org job hitting `/api/cron/publish?key=CRON_SECRET`.
 - Pinterest posting routes through `src/lib/platforms/index.ts`: direct API when connected, else the Make.com bridge (`src/lib/platforms/make.ts`, env `MAKE_POST_WEBHOOK_URL`, `MAKE_BOARDS_WEBHOOK_URL`, `MAKE_WEBHOOK_KEY`; setup in `docs/MAKE_SETUP.md` and the Word version `docs/PinFlow-Make-Setup-Guide.docx`). Make Free plan: ~3 credits per pin.
+- Discover: best-seller refresh pulls 50 per Canopy lookup, labels types with one AI call (`src/lib/sorter.ts`) and keeps 15 varied picks (per-category `uniqueTypes`). In-app Amazon search (`src/actions/search.ts`) caches results 7 days. All Canopy calls stop at `settings.canopyMonthlyLimit` (default 100 = free tier).
 - Schema changes: edit `src/db/schema.ts`, then `pnpm db:push`.

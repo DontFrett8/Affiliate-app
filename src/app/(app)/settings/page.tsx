@@ -124,6 +124,11 @@ export default async function SettingsPage({ searchParams }: PageProps<"/setting
           <p className="mt-1 text-xs text-muted">Links are built as https://www.amazon.com/dp/ASIN?tag=…</p>
         </div>
         <div>
+          <label className="label" htmlFor="canopyMonthlyLimit">Monthly Amazon lookup limit</label>
+          <input id="canopyMonthlyLimit" name="canopyMonthlyLimit" type="number" min={0} max={5000} inputMode="numeric" className="input" defaultValue={s.canopyMonthlyLimit} />
+          <p className="mt-1 text-xs text-muted">Searches and refreshes stop at this number each month. 100 is Canopy&apos;s free amount; each lookup past it costs about $0.01.</p>
+        </div>
+        <div>
           <label className="label" htmlFor="defaultDestinationLink">Default destination link</label>
           <input id="defaultDestinationLink" name="defaultDestinationLink" className="input" inputMode="url" defaultValue={s.defaultDestinationLink} placeholder="https://www.amazon.com/shop/yourname" />
         </div>
@@ -174,6 +179,14 @@ export default async function SettingsPage({ searchParams }: PageProps<"/setting
                   <button className="btn-secondary shrink-0">Save</button>
                 </div>
                 <input name="amazonCategory" className="input !text-xs font-mono" defaultValue={c.amazonCategory} placeholder="https://www.amazon.com/gp/bestsellers/beauty/11058281" aria-label="Amazon category" />
+                <input type="hidden" name="uniqueTypesShown" value="1" />
+                <label className="flex items-start gap-2.5 text-sm">
+                  <input type="checkbox" name="uniqueTypes" defaultChecked={c.uniqueTypes} className="mt-0.5 h-4 w-4 accent-[var(--accent)]" />
+                  <span>
+                    One of each item type
+                    <span className="block text-xs text-muted">{c.uniqueTypes ? "e.g. only one parchment paper, one peeler." : "Similar items allowed (good for clothing and jewelry); only near-copies are hidden."} Applies on the next refresh.</span>
+                  </span>
+                </label>
                 {c.amazonCategoryName && <p className="text-xs text-success-ink">Amazon: {c.amazonCategoryName}</p>}
                 {c.lastError && <p className="text-xs text-danger-ink">{c.lastError}</p>}
               </form>
