@@ -35,12 +35,13 @@ Do this in one scenario at a time.
 ## Part 3 — Finish the "Post pin" scenario
 
 7. After the webhook, add **Pinterest → Create a Pin** and pick your Pinterest connection. Fill in:
-   - **Board:** switch the field to **Map**, then pick `board_id` from the webhook data.
-   - **Title:** `title`
+   - **Media Source → Source Type:** choose **Image URL** from the dropdown (Map off). In the **URL** field that appears, pick `image_url`.
+   - **Board:** switch the field to **Map**, then pick `board_id`.
+   - **Board Section:** leave **empty**.
+   - **Pin Name:** `title`
    - **Description:** `description`
    - **Link:** `link`
-   - **Alt text:** `alt_text` (if the field exists)
-   - **Media / Source type:** **Image URL**, and for the URL pick `image_url`
+   - **Alt text:** `alt_text` (only if you see the field; it's optional)
 8. Click the line between the webhook and Pinterest, choose **Set up a filter**:
    - Label: `Correct key`
    - Condition: pick `key` from the webhook, choose **Text operators: Equal to**, and paste the **Security key** shown in PinFlow's Settings.
