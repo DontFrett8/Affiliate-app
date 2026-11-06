@@ -2,9 +2,9 @@
 
 import { inArray } from "drizzle-orm";
 import { db } from "@/db";
-import { apiUsage, categories } from "@/db/schema";
+import { categories } from "@/db/schema";
 import { getSettings } from "@/lib/settings";
-import { suggestPinCopy, type CopySuggestion } from "@/lib/copywriter";
+import { logAiCall, suggestPinCopy, type CopySuggestion } from "@/lib/copywriter";
 
 /** Suggest a pin title + description for the products checked on the Find tab. */
 export async function suggestCopy(input: { titles: string[]; categoryIds: number[] }): Promise<CopySuggestion> {
@@ -28,8 +28,6 @@ export async function suggestCopy(input: { titles: string[]; categoryIds: number
     hashtags: s.defaultHashtags,
     disclosure: s.disclosureText,
   });
-  if (result.source === "ai") {
-    await db.insert(apiUsage).values({ provider: "ai", endpoint: `copy:${result.model ?? ""}:${result.usage?.input ?? 0}/${result.usage?.output ?? 0}`, ok: true }).catch(() => {});
-  }
+  if (result.source === "ai") await logAiCall(`copy:${result.model ?? ""}:${result.usage?.input ?? 0}/${result.usage?.output ?? 0}`, true);
   return { title: result.title, description: result.description, source: result.source, note: result.note };
 }

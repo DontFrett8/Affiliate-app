@@ -1,7 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { z } from "zod";
-import { aiClient, supportsFallbacks } from "@/lib/copywriter";
+import { aiClient, logAiCall, supportsFallbacks } from "@/lib/copywriter";
 
 export type Labeled = { type: string; variant: string };
 
@@ -61,6 +61,7 @@ export async function labelProducts(titles: string[], categoryName: string): Pro
       c.direct && supportsFallbacks(c.model)
         ? await c.client.beta.messages.parse({ ...request, betas: ["server-side-fallback-2026-07-01"], fallbacks: "default" })
         : await c.client.messages.parse(request);
+    await logAiCall(`sort:${res.model}:${res.usage.input_tokens}/${res.usage.output_tokens}`, true);
     if (res.stop_reason === "refusal" || !res.parsed_output) return { labels: heuristicLabels(titles), source: "heuristic", note: "AI gave no labels" };
     const fallback = heuristicLabels(titles);
     const byIndex = new Map(res.parsed_output.items.map((it) => [it.i, it]));

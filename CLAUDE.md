@@ -7,7 +7,7 @@
 - When unsure whether something costs money, ask first.
 
 ## Project notes
-- Stack: Next.js 16 App Router, Drizzle + Neon Postgres, Vercel Blob, Pinterest API v5, Canopy API, Claude Haiku 5.5 via Vercel AI Gateway (`src/lib/copywriter.ts`; Opus is not in the free gateway tier, override with PINFLOW_AI_MODEL).
+- Stack: Next.js 16 App Router, Drizzle + Neon Postgres, Vercel Blob, Pinterest API v5, Canopy API, Claude Haiku 5.5 via Vercel AI Gateway (`src/lib/copywriter.ts`; Opus is not in the free gateway tier, override with PINFLOW_AI_MODEL). AI calls capped at 500/month (PINFLOW_AI_MONTHLY_CALLS), then free fallbacks..
 - Vercel team `dont-frett`, project `pinflow`; production deploys from branch `claude/pinflow-pinterest-scheduler-cmka3p`.
 - Posting is triggered every 10 min by an external cron-job.org job hitting `/api/cron/publish?key=CRON_SECRET`.
 - Pinterest posting routes through `src/lib/platforms/index.ts`: direct API when connected, else the Make.com bridge (`src/lib/platforms/make.ts`, env `MAKE_POST_WEBHOOK_URL`, `MAKE_BOARDS_WEBHOOK_URL`, `MAKE_WEBHOOK_KEY`; setup in `docs/MAKE_SETUP.md` and the Word version `docs/PinFlow-Make-Setup-Guide.docx`). Make Free plan: ~3 credits per pin.

@@ -2,7 +2,26 @@ import Anthropic from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { getVercelOidcToken } from "@vercel/oidc";
 import { z } from "zod";
+import { and, count, eq, gte } from "drizzle-orm";
+import { db } from "@/db";
+import { apiUsage } from "@/db/schema";
 import { DESC_MAX, TITLE_MAX } from "@/lib/limits";
+
+/** Hard monthly ceiling on AI calls so paid AI credits can't drain unexpectedly (~$0.001 each on Haiku). */
+const AI_MONTHLY_CALLS = Number(process.env.PINFLOW_AI_MONTHLY_CALLS) || 500;
+
+async function aiCallsThisMonth() {
+  const monthStart = new Date();
+  monthStart.setUTCDate(1);
+  monthStart.setUTCHours(0, 0, 0, 0);
+  const [{ n }] = await db.select({ n: count() }).from(apiUsage).where(and(eq(apiUsage.provider, "ai"), gte(apiUsage.createdAt, monthStart)));
+  return Number(n);
+}
+
+/** Record one AI call (counts toward the monthly ceiling). */
+export async function logAiCall(endpoint: string, ok: boolean) {
+  await db.insert(apiUsage).values({ provider: "ai", endpoint: endpoint.slice(0, 200), ok }).catch(() => {});
+}
 
 export type CopyProduct = { title: string };
 export type CopySuggestion = { title: string; description: string; source: "ai" | "template"; note?: string };
@@ -32,6 +51,7 @@ export function supportsFallbacks(model: string) {
 
 /** Uses ANTHROPIC_API_KEY when set, otherwise Vercel AI Gateway via the deployment's OIDC token. */
 export async function aiClient(): Promise<{ client: Anthropic; model: string; direct: boolean } | null> {
+  if ((await aiCallsThisMonth().catch(() => 0)) >= AI_MONTHLY_CALLS) return null;
   if (process.env.ANTHROPIC_API_KEY) {
     return { client: new Anthropic(), model: process.env.PINFLOW_AI_MODEL || "claude-haiku-5-5", direct: true };
   }
@@ -91,7 +111,7 @@ export async function suggestPinCopy(opts: {
   if (!products.length) return fallback("No products selected.");
 
   const c = await aiClient();
-  if (!c) return fallback("AI isn't set up, so this is a template.");
+  if (!c) return fallback("AI is off or this month's AI limit was reached, so this is a template.");
 
   const tail = [hashtags.trim(), disclosure.trim()].filter(Boolean).join("\n\n");
   const bodyMax = Math.max(120, DESC_MAX - (tail ? tail.length + 2 : 0) - 10);
