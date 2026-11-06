@@ -20,7 +20,7 @@ export async function refreshCategory(categoryId: number) {
     const res = await fetchBestSellers(cat.amazonCategory, 50);
     const unique = new Map(res.products.filter((p) => p.asin).map((p) => [p.asin, p]));
     const pool = [...unique.values()];
-    const { labels } = await labelProducts(pool.map((p) => p.title ?? ""), cat.name);
+    const { labels, source: labelSource } = await labelProducts(pool.map((p) => p.title ?? ""), cat.name);
     const picked = pickVariety(pool, labels, cat.uniqueTypes, TOP_N);
     const now = new Date();
     await db.delete(products).where(and(eq(products.categoryId, categoryId), eq(products.source, "canopy")));
@@ -38,7 +38,8 @@ export async function refreshCategory(categoryId: number) {
             rating: p.rating ?? null,
             ratingsTotal: p.ratingsTotal ?? null,
             rank: p.bestSellersRank ?? i + 1,
-            productType: label.type,
+            // Only show the type label when the AI wrote it; fallback labels are rough.
+            productType: labelSource === "ai" ? label.type : null,
             source: "canopy",
             fetchedAt: now,
           })),
