@@ -25,16 +25,21 @@ Rules (Amazon Associates and Pinterest policy):
 - No hashtags and no affiliate disclosure in your output; the app adds both.
 - US English.`;
 
+/** Server-side refusal fallbacks exist for the larger models only (not Haiku). */
+export function supportsFallbacks(model: string) {
+  return !/haiku/i.test(model);
+}
+
 /** Uses ANTHROPIC_API_KEY when set, otherwise Vercel AI Gateway via the deployment's OIDC token. */
 export async function aiClient(): Promise<{ client: Anthropic; model: string; direct: boolean } | null> {
   if (process.env.ANTHROPIC_API_KEY) {
-    return { client: new Anthropic(), model: process.env.PINFLOW_AI_MODEL || "claude-opus-5-5", direct: true };
+    return { client: new Anthropic(), model: process.env.PINFLOW_AI_MODEL || "claude-haiku-5-5", direct: true };
   }
   const gatewayKey = process.env.AI_GATEWAY_API_KEY || (await getVercelOidcToken().catch(() => null));
   if (!gatewayKey) return null;
   return {
     client: new Anthropic({ apiKey: gatewayKey, baseURL: "https://ai-gateway.vercel.sh" }),
-    model: process.env.PINFLOW_AI_MODEL || "anthropic/claude-opus-5.5",
+    model: process.env.PINFLOW_AI_MODEL || "anthropic/claude-haiku-5.5",
     direct: false,
   };
 }
@@ -109,10 +114,11 @@ Write the title (max 90 characters) and the body (max ${bodyMax} characters).`;
   };
 
   try {
-    const res = c.direct
-      ? // Direct to Anthropic: opt in to server-side refusal fallbacks.
-        await c.client.beta.messages.parse({ ...request, betas: ["server-side-fallback-2026-07-01"], fallbacks: "default" })
-      : await c.client.messages.parse(request);
+    const res =
+      c.direct && supportsFallbacks(c.model)
+        ? // Direct to Anthropic on a larger model: opt in to server-side refusal fallbacks.
+          await c.client.beta.messages.parse({ ...request, betas: ["server-side-fallback-2026-07-01"], fallbacks: "default" })
+        : await c.client.messages.parse(request);
     if (res.stop_reason === "refusal") return fallback("The AI declined this one, so this is a template.");
     const out = res.parsed_output;
     if (!out?.title || !out.body) return fallback("The AI reply was empty, so this is a template.");

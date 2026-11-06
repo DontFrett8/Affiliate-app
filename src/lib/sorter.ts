@@ -1,7 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { z } from "zod";
-import { aiClient } from "@/lib/copywriter";
+import { aiClient, supportsFallbacks } from "@/lib/copywriter";
 
 export type Labeled = { type: string; variant: string };
 
@@ -57,9 +57,10 @@ export async function labelProducts(titles: string[], categoryName: string): Pro
     messages: [{ role: "user" as const, content: `Category: ${categoryName}\n\n${list}` }],
   };
   try {
-    const res = c.direct
-      ? await c.client.beta.messages.parse({ ...request, betas: ["server-side-fallback-2026-07-01"], fallbacks: "default" })
-      : await c.client.messages.parse(request);
+    const res =
+      c.direct && supportsFallbacks(c.model)
+        ? await c.client.beta.messages.parse({ ...request, betas: ["server-side-fallback-2026-07-01"], fallbacks: "default" })
+        : await c.client.messages.parse(request);
     if (res.stop_reason === "refusal" || !res.parsed_output) return { labels: heuristicLabels(titles), source: "heuristic", note: "AI gave no labels" };
     const fallback = heuristicLabels(titles);
     const byIndex = new Map(res.parsed_output.items.map((it) => [it.i, it]));
@@ -70,7 +71,7 @@ export async function labelProducts(titles: string[], categoryName: string): Pro
     return { labels, source: "ai" };
   } catch (err) {
     const msg = err instanceof Anthropic.APIError ? `AI error ${err.status ?? ""}` : err instanceof Error ? err.message : String(err);
-    console.error("labelProducts failed:", msg);
+    console.error("labelProducts failed:", msg, err instanceof Error ? err.message.slice(0, 300) : "");
     return { labels: heuristicLabels(titles), source: "heuristic", note: msg.slice(0, 120) };
   }
 }
