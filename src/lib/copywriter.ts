@@ -29,6 +29,7 @@ export type CopySuggestion = { title: string; description: string; source: "ai" 
 const PinCopy = z.object({
   title: z.string().describe("Pinterest pin title"),
   body: z.string().describe("Pin description body, without hashtags or disclosure"),
+  hashtags: z.array(z.string()).describe("6 to 8 hashtags about these specific products, without the # sign"),
 });
 
 const SYSTEM = `You write Pinterest pin copy for an Amazon affiliate creator. Each pin is one image that groups several products and links to the creator's Amazon idea list.
@@ -41,7 +42,8 @@ Rules (Amazon Associates and Pinterest policy):
 - Never mention prices, discounts, sale claims, star ratings, review counts, rankings, or "best seller" status. They change and are not allowed to go stale in posts.
 - No medical, health, or guaranteed-result claims (for example "cures acne", "regrows hair").
 - Don't claim the creator personally tested an item. "Finds", "picks" and "favorites" are fine.
-- No hashtags and no affiliate disclosure in your output; the app adds both.
+- hashtags: 6 to 8 Pinterest hashtags about these specific products and how they're used (for example kitchengadgets, bakingessentials, fallmakeup, cozyhomedecor). One word each, lowercase, no spaces, no # sign. Skip brand names unless the brand is the main appeal, and never use "ad" or "sponsored".
+- Keep hashtags out of the title and body, and leave out the affiliate disclosure; the app adds both at the end.
 - US English.`;
 
 /** Server-side refusal fallbacks exist for the larger models only (not Haiku). */
@@ -81,8 +83,34 @@ export function shortName(title: string) {
   return head.split(/\s+/).slice(0, 6).join(" ");
 }
 
-export function assembleDescription(body: string, hashtags: string, disclosure: string) {
-  const tail = [hashtags.trim(), disclosure.trim()].filter(Boolean).join("\n\n");
+const GENERIC_TAGS = ["amazonfinds", "founditonamazon", "amazonmusthaves", "amazonfavorites", "shoppinglist", "giftideas"];
+const MIN_TAGS = 5;
+const MAX_TAGS = 10;
+
+function cleanTag(t: string) {
+  return t.replace(/^#+/, "").toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+/** Product tags first, then the owner's default hashtags, then generic ones until there are at least 5. */
+export function buildHashtags(productTags: string[], defaultHashtags: string, categoryName: string | null) {
+  const out: string[] = [];
+  const add = (t: string) => {
+    const c = cleanTag(t);
+    if (c.length < 3 || c === "ad" || c === "sponsored" || out.includes(c) || out.length >= MAX_TAGS) return;
+    out.push(c);
+  };
+  productTags.forEach(add);
+  defaultHashtags.split(/[\s,]+/).filter(Boolean).forEach(add);
+  if (out.length < MIN_TAGS && categoryName) {
+    add(categoryName);
+    add(`${categoryName}finds`);
+  }
+  for (const g of GENERIC_TAGS) if (out.length < MIN_TAGS) add(g);
+  return out.map((t) => `#${t}`).join(" ");
+}
+
+export function assembleDescription(body: string, hashtagLine: string, disclosure: string) {
+  const tail = [hashtagLine.trim(), disclosure.trim()].filter(Boolean).join("\n\n");
   const room = DESC_MAX - (tail ? tail.length + 2 : 0);
   const fitted = fitText(body, Math.max(room, 0));
   return [fitted, tail].filter(Boolean).join("\n\n");
@@ -97,7 +125,7 @@ export function templateCopy(products: CopyProduct[], categoryName: string | nul
   const body = names.length
     ? `My current ${cat.toLowerCase()} picks: ${list}${names.length > 5 ? ", and more" : ""}. Tap to shop the full list on Amazon.`
     : `My current ${cat.toLowerCase()} picks. Tap to shop the full list on Amazon.`;
-  return { title, description: assembleDescription(body, hashtags, disclosure), source: "template" };
+  return { title, description: assembleDescription(body, buildHashtags([], hashtags, categoryName), disclosure), source: "template" };
 }
 
 export async function suggestPinCopy(opts: {
@@ -113,8 +141,8 @@ export async function suggestPinCopy(opts: {
   const c = await aiClient();
   if (!c) return fallback("AI is off or this month's AI limit was reached, so this is a template.");
 
-  const tail = [hashtags.trim(), disclosure.trim()].filter(Boolean).join("\n\n");
-  const bodyMax = Math.max(120, DESC_MAX - (tail ? tail.length + 2 : 0) - 10);
+  // Reserve room for ~10 hashtags plus the disclosure.
+  const bodyMax = Math.max(120, DESC_MAX - 150 - disclosure.trim().length - 6);
   const list = products
     .slice(0, 20)
     .map((p, i) => `${i + 1}. ${p.title.slice(0, 200)}`)
@@ -144,7 +172,7 @@ Write the title (max 90 characters) and the body (max ${bodyMax} characters).`;
     if (!out?.title || !out.body) return fallback("The AI reply was empty, so this is a template.");
     return {
       title: fitText(out.title.replace(/#\w+/g, "").trim(), TITLE_MAX),
-      description: assembleDescription(out.body.replace(/#\w+/g, "").trim(), hashtags, disclosure),
+      description: assembleDescription(out.body.replace(/#\w+/g, "").trim(), buildHashtags(out.hashtags ?? [], hashtags, categoryName), disclosure),
       source: "ai",
       model: res.model,
       usage: { input: res.usage.input_tokens, output: res.usage.output_tokens },
