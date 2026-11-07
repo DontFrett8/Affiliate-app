@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { Check, ExternalLink, Star, X } from "lucide-react";
+import { amazonImageAtSize } from "@/lib/amazon";
 
 export type ProductView = {
   id: number;
@@ -29,7 +30,7 @@ export function ProductCard({ product: p, checked, onToggle, link, onRemove }: {
     >
       <button type="button" onClick={onToggle} aria-pressed={checked} aria-label={`${checked ? "Unselect" : "Select"} ${p.title}`} className="relative aspect-square w-full bg-white">
         {p.imageUrl ? (
-          <Image src={p.imageUrl} alt="" fill sizes="(max-width: 640px) 50vw, 280px" className="object-contain p-3 transition duration-300 group-hover:scale-[1.03]" unoptimized />
+          <Image src={amazonImageAtSize(p.imageUrl, 500) ?? p.imageUrl} alt="" fill sizes="(max-width: 640px) 50vw, 280px" className="object-contain p-3 transition duration-300 group-hover:scale-[1.03]" unoptimized />
         ) : (
           <div className="grid h-full place-items-center px-3 text-center text-xs text-muted">{p.asin}</div>
         )}
